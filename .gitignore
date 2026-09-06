@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Env & secrets
+.env
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Prisma
+backend/prisma/*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dev / local servers
+xampp/

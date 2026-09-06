@@ -1,0 +1,170 @@
+// Roti Chani System schema.
+// Source of truth for the DB. The `Roti_chani_system_v3.sql` dump is reference only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  customerId Int       @id @default(autoincrement()) @map("customer_id")
+  fullName   String    @map("full_name") @db.VarChar(150)
+  phone      String    @unique @map("phone") @db.VarChar(20)
+  gpsLink    String?  @map("gps_link") @db.VarChar(500)
+  address    String?  @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  orders Order[]
+
+  @@map("Customers")
+}
+
+model Product {
+  productId     Int       @id @default(autoincrement()) @map("product_id")
+  productName   String    @unique @map("product_name") @db.VarChar(150)
+  unitPrice     Decimal   @map("unit_price") @db.Decimal(10, 2)
+  stockQuantity Int       @default(0) @map("stock_quantity")
+  imageUrl      String    @default("") @map("image_url") @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  orderItems   OrderItem[]
+  stockReceipts StockReceipt[]
+
+  @@map("Products")
+}
+
+model Order {
+  orderId            Int         @id @default(autoincrement()) @map("order_id")
+  customerId          Int         @map("customer_id")
+  orderDate           DateTime    @default(now()) @map("order_date") @db.Timestamp(0)
+  expectedDeliveryAt  DateTime?   @map("expected_delivery_at") @db.Timestamp(0)
+  status             OrderStatus @default(PENDING) @map("status")
+  statusUpdatedAt    DateTime    @default(now()) @map("status_updated_at") @db.Timestamp(0)
+  notes              String?      @db.Text
+  updatedAt          DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt          DateTime?   @map("deleted_at") @db.Timestamp(0)
+
+  customer Customer   @relation(fields: [customerId], references: [customerId], onDelete: Restrict, onUpdate: Cascade)
+  items   OrderItem[]
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderDate])
+  @@map("Orders")
+}
+
+model OrderItem {
+  orderItemId Int      @id @default(autoincrement()) @map("order_item_id")
+  orderId     Int      @map("order_id")
+  productId   Int      @map("product_id")
+  quantity    Int      @map("quantity")
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  productName String   @map("product_name") @db.VarChar(150)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  order   Order   @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("Order_Items")
+}
+
+model Payment {
+  paymentId     Int           @id @default(autoincrement()) @map("payment_id")
+  orderId       Int           @map("order_id")
+  amount        Decimal       @map("amount") @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  paymentType   PaymentType   @map("payment_type")
+  paymentDate   DateTime      @default(now()) @map("payment_date") @db.Timestamp(0)
+  notes         String?       @db.Text
+  deletedAt     DateTime?     @map("deleted_at") @db.Timestamp(0)
+
+  order Order @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([orderId])
+  @@index([paymentStatus])
+  @@map("Payments")
+}
+
+model StockReceipt {
+  receiptId   Int       @id @default(autoincrement()) @map("receipt_id")
+  productId   Int       @map("product_id")
+  quantity    Int       @map("quantity")
+  receiptDate DateTime  @default(now()) @map("receipt_date") @db.Timestamp(0)
+  notes       String?   @db.Text
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  product Product @relation(fields: [productId], references: [productId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([productId])
+  @@index([receiptDate])
+  @@map("Stock_Receipts")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(EMPLOYEE)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  @@map("Users")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement()) @map("id")
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    Int      @map("entity_id")
+  action      String   @map("action") @db.VarChar(50)
+  description String   @map("description") @db.Text
+  metadata    String?  @map("metadata") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("Activity_Logs")
+}
+
+enum OrderStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  SHIPPED    @map("shipped")
+  DELIVERED  @map("delivered")
+  CANCELLED  @map("cancelled")
+
+  @@map("order_status")
+}
+
+enum PaymentStatus {
+  UNPAID  @map("unpaid")
+  PARTIAL @map("partial")
+  PAID    @map("paid")
+
+  @@map("payment_status")
+}
+
+enum PaymentType {
+  CASH          @map("cash")
+  BANK_TRANSFER @map("bank_transfer")
+  CARD          @map("card")
+  ONLINE        @map("online")
+
+  @@map("payment_type")
+}
+
+enum UserRole {
+  ADMIN    @map("admin")
+  EMPLOYEE @map("employee")
+
+  @@map("user_role")
+}
