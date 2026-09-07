@@ -5,9 +5,17 @@ import { toCents } from "../../utils/money";
 import { toPaymentType, type WirePaymentType } from "../../domain/enums";
 import { logActivity } from "../../utils/activityLog";
 
-export async function listPayments(orderId?: number) {
-  const where = orderId !== undefined ? { orderId, deletedAt: null } : { deletedAt: null };
-  return prisma.payment.findMany({ where, orderBy: { paymentId: "asc" } });
+export async function listPaymentsForOrder(orderId: number) {
+  return prisma.payment.findMany({ where: { orderId, deletedAt: null }, orderBy: { paymentId: "asc" } });
+}
+
+export async function listPayments(page: { skip: number; take: number }) {
+  const where = { deletedAt: null };
+  const [payments, total] = await Promise.all([
+    prisma.payment.findMany({ where, orderBy: { paymentId: "asc" }, skip: page.skip, take: page.take }),
+    prisma.payment.count({ where }),
+  ]);
+  return { payments, total };
 }
 
 export async function createPayment(input: {

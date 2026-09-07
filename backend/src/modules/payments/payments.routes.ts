@@ -3,8 +3,9 @@ import { z } from "zod";
 import { asyncHandler } from "../../utils/async";
 import { validate } from "../../middleware/validate";
 import { requireAdmin } from "../../middleware/auth";
+import { parsePagination, paginated } from "../../utils/pagination";
 import { WIRE_PAYMENT_TYPES } from "../../domain/enums";
-import { createPayment, listPayments, restorePayment, softDeletePayment } from "./payments.service";
+import { createPayment, listPayments, listPaymentsForOrder, restorePayment, softDeletePayment } from "./payments.service";
 
 const router = Router();
 
@@ -27,13 +28,19 @@ router.post(
   }),
 );
 
-// GET /api/payments?orderId=
+// GET /api/payments?orderId= — per-order list, or the full paginated list
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const orderId = Number(req.query.orderId);
-    const payments = await listPayments(Number.isFinite(orderId) ? orderId : undefined);
-    res.json({ data: payments });
+    const raw = Number(req.query.orderId);
+    if (Number.isFinite(raw)) {
+      const payments = await listPaymentsForOrder(raw);
+      res.json({ data: payments });
+      return;
+    }
+    const page = parsePagination(req.query);
+    const { payments, total } = await listPayments(page);
+    res.json(paginated(payments, total, page.page, page.pageSize));
   }),
 );
 
