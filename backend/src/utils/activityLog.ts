@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
 
 export type ActivityAction =
@@ -17,9 +18,10 @@ export interface LogEntry {
   metadata?: Record<string, unknown>;
 }
 
-export async function logActivity(entry: LogEntry): Promise<void> {
+export async function logActivity(entry: LogEntry, tx?: Prisma.TransactionClient): Promise<void> {
   try {
-    await prisma.activityLog.create({
+    const client = tx ?? prisma;
+    await client.activityLog.create({
       data: {
         entityType: entry.entityType,
         entityId: entry.entityId,

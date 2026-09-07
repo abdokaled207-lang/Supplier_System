@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import { errors } from "../utils/http";
 import type { CreateOrderData, OrderAdapter, OrderItemRow, OrderRow } from "../domain/fulfillment";
 
-type Handle = Pick<PrismaClient, "order" | "customer" | "product" | "orderItem">;
+type Handle = Pick<PrismaClient, "order" | "customer" | "product" | "orderItem" | "$transaction">;
 
 export const ORDER_WITH = {
   customer: true,
@@ -67,18 +67,17 @@ function makeAdapter(handle: Handle): OrderAdapter {
       }) as unknown as Promise<OrderAdapter["updateOrder"] extends (id: number, d: unknown, i: unknown) => infer R ? R : never>;
     },
     decrementStock: async (items) => {
-      // Atomic conditional decrement: the WHERE guards against over-decrementing
-      // when two fulfillments race (the pre-flight check in the domain is racy;
-      // this is the authoritative backstop inside the transaction).
-      for (const item of items) {
-        const { count } = await handle.product.updateMany({
-          where: { productId: item.productId, stockQuantity: { gte: item.quantity } },
-          data: { stockQuantity: { decrement: item.quantity } },
-        });
-        if (count === 0) {
-          throw errors.insufficientStock(`Insufficient stock for product ${item.productId}`);
+      await handle.$transaction(async (tx) => {
+        for (const item of items) {
+          const { count } = await tx.product.updateMany({
+            where: { productId: item.productId, stockQuantity: { gte: item.quantity } },
+            data: { stockQuantity: { decrement: item.quantity } },
+          });
+          if (count === 0) {
+            throw errors.insufficientStock(`Insufficient stock for product ${item.productId}`);
+          }
         }
-      }
+      });
     },
     incrementStock: (items) =>
       Promise.all(
