@@ -6,8 +6,9 @@ export function formatPhoneForWhatsApp(phone: string): string {
   return normalized;
 }
 
-export function waMeLink(phone: string): string | null {
+export function waMeLink(phone: string, message?: string): string | null {
   const formatted = formatPhoneForWhatsApp(phone);
   if (!formatted) return null;
-  return `https://wa.me/${formatted}`;
+  const query = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${formatted}${query}`;
 }

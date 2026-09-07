@@ -1,12 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Mail, Phone } from "lucide-react";
 import { api } from "../api/client";
 import type { CustomerProfile, Order } from "../api/types";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { InlineError } from "../components/InlineError";
+import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { getAllSettings, invoiceNumber } from "../utils/settings";
 import { formatShortDate } from "../utils/datetime";
 import { formatMoney } from "../utils/money";
+import { waMeLink } from "../utils/phone";
 
 export function Invoice() {
   const { id } = useParams<{ id: string }>();
@@ -23,19 +26,42 @@ export function Invoice() {
     enabled: !!orderQuery.data?.data?.customerId,
   });
 
+  const order = orderQuery.data?.data;
+  const settings = getAllSettings();
+  const customerPhone = order?.customer?.phone ?? customerQuery.data?.data?.phone ?? "";
+  const sendLink = order && customerPhone
+    ? waMeLink(customerPhone, [
+        `*INVOICE ${invoiceNumber(order.orderId)}*`,
+        settings.companyName || "ROTI CHANI KING",
+        `Date: ${formatShortDate(order.orderDate)}`,
+        `Customer: ${order.customer?.fullName ?? "—"}`,
+        `Sub Total: ${formatMoney(order.total)}`,
+        `Baki Tertunggak: ${formatMoney(customerQuery.data?.data?.outstandingBalance ?? order.balance)}`,
+        "Thank you for your support!",
+      ].join("\n"))
+    : null;
+
   return (
     <div className="invoice-page">
       <div className="invoice-toolbar">
         <a href="/orders" className="secondary">← Back to Orders</a>
-        <button onClick={() => window.print()}>Print Invoice</button>
+        {sendLink ? (
+          <a className="inv-send-btn" href={sendLink} target="_blank" rel="noopener noreferrer">
+            <WhatsAppIcon size={16} /> Send to Customer
+          </a>
+        ) : (
+          <button className="inv-send-btn inv-send-btn--disabled" disabled title="This customer has no phone number on file">
+            <WhatsAppIcon size={16} /> Send to Customer
+          </button>
+        )}
       </div>
 
       {orderQuery.isLoading && <LoadingSkeleton rows={8} columns={4} />}
       {orderQuery.isError && <InlineError message={(orderQuery.error as Error)?.message ?? "Failed to load invoice"} />}
 
-      {orderQuery.data?.data && (
+      {order && (
         <InvoiceSheet
-          order={orderQuery.data.data}
+          order={order}
           outstandingBalance={customerQuery.data?.data?.outstandingBalance}
         />
       )}
@@ -57,10 +83,9 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
   return (
     <div className="inv-sheet">
       {/* ===== HEADER ===== */}
-      {/* Top header row: logo + company name | INVOICE title */}
+      {/* Clear-invoice layout: logo left, company block centered, INVOICE title right */}
       <div className="inv-header-row">
-        {/* Left: logo + company info */}
-        <div className="inv-header-left">
+        <div className="inv-header-logo">
           {settings.logoUrl ? (
             <img src={settings.logoUrl} alt="Company logo" className="inv-logo" />
           ) : (
@@ -68,16 +93,28 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
               <span>{settings.companyName ? settings.companyName.charAt(0) : "R"}</span>
             </div>
           )}
-          <div className="inv-company-info">
-            <p className="inv-company-name">{settings.companyName || "ROTI CHANI KING"}</p>
-            {settings.companyAddress && <p>{settings.companyAddress}</p>}
-            {settings.companyCity && <p>{settings.companyCity}</p>}
-            {settings.companyPhone && <p>{settings.companyPhone}</p>}
-            {settings.companyEmail && <p>{settings.companyEmail}</p>}
-          </div>
         </div>
 
-        {/* Right: INVOICE title */}
+        <div className="inv-company-info">
+          <p className="inv-company-name">{settings.companyName || "ROTI CHANI KING"}</p>
+          {settings.companyAddress && <p>{settings.companyAddress}</p>}
+          {settings.companyCity && <p>{settings.companyCity}</p>}
+          {(settings.companyPhone || settings.companyEmail) && (
+            <p className="inv-company-contact">
+              {settings.companyPhone && (
+                <span className="inv-contact-item">
+                  <Phone size={10} aria-hidden="true" /> {settings.companyPhone}
+                </span>
+              )}
+              {settings.companyEmail && (
+                <span className="inv-contact-item">
+                  <Mail size={10} aria-hidden="true" /> {settings.companyEmail}
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+
         <div className="inv-header-right">
           <p className="inv-title-word">INVOICE</p>
         </div>
