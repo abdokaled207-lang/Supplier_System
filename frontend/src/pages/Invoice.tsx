@@ -33,7 +33,6 @@ export function Invoice() {
   });
 
   const order = orderQuery.data?.data;
-  const settings = getAllSettings();
   const customerPhone = order?.customer?.phone ?? customerQuery.data?.data?.phone ?? "";
   const canSend = !!order && !!customerPhone;
   const pdfFilename = order ? `${invoiceNumber(order.orderId)}.pdf` : "invoice.pdf";
@@ -57,18 +56,15 @@ export function Invoice() {
     return pdf.output("blob");
   }
 
-  function buildMessage(pdfUrl: string): string {
-    if (!order) return "";
-    return [
-      `*INVOICE ${invoiceNumber(order.orderId)}*`,
-      settings.companyName || "ROTI CHANI KING",
-      `Date: ${formatShortDate(order.orderDate)}`,
-      `Customer: ${order.customer?.fullName ?? "—"}`,
-      `Sub Total: ${formatMoney(order.total)}`,
-      `Baki Tertunggak: ${formatMoney(customerQuery.data?.data?.outstandingBalance ?? order.balance)}`,
-      `Invoice PDF: ${pdfUrl}`,
-      "Thank you for your support!",
-    ].join("\n");
+  function downloadPdf(pdf: Blob) {
+    const url = URL.createObjectURL(pdf);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pdfFilename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 
   async function sendToCustomer() {
@@ -76,22 +72,34 @@ export function Invoice() {
     setSending(true);
     setSendError(null);
 
-    try {
-      // 1. Create the PDF from the on-screen invoice and store it on the
-      //    backend, which returns a public link the customer can open.
-      const pdf = await generatePdf();
-      const form = new FormData();
-      form.append("file", new File([pdf], pdfFilename, { type: "application/pdf" }));
-      form.append("orderId", String(order.orderId));
-      const uploaded = await api.postForm<{ data: { path: string } }>("/invoices", form);
-      const base = (import.meta.env.VITE_PUBLIC_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
-      const pdfUrl = `${base}${uploaded.data.path}`;
+    // Deliver the invoice as a PDF FILE only — no text message.
+    // Native file share first (WhatsApp appears in the OS share panel with
+    // the PDF attached). Capability check must happen inside the click
+    // gesture: the fallback needs to open the chat window synchronously,
+    // because browsers block window.open after the async PDF render.
+    const supportsFileShare = typeof navigator.share === "function" && typeof navigator.canShare === "function";
 
-      // 2. Open the current customer's WhatsApp chat with the PDF link.
-      window.open(waMeLink(customerPhone, buildMessage(pdfUrl))!, "_blank", "noopener,noreferrer");
+    if (!supportsFileShare) {
+      window.open(waMeLink(customerPhone)!, "_blank", "noopener,noreferrer");
+    }
+
+    try {
+      const pdf = await generatePdf();
+      const file = new File([pdf], pdfFilename, { type: "application/pdf" });
+
+      if (supportsFileShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: pdfFilename });
+        return;
+      }
+
+      downloadPdf(pdf);
+      if (supportsFileShare) {
+        // Browser claims share support but rejected this file type — fall back.
+        window.open(waMeLink(customerPhone)!, "_blank", "noopener,noreferrer");
+      }
     } catch (e) {
       if ((e as Error)?.name !== "AbortError") {
-        setSendError("Could not upload the invoice PDF. Check the server connection and try again, or use Ctrl+P to print.");
+        setSendError("Could not create the invoice PDF. Try again, or use Ctrl+P to print.");
       }
     } finally {
       setSending(false);
