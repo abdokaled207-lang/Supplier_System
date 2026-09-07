@@ -42,7 +42,7 @@ router.get(
 // POST /api/stock-receipts
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const receipt = await createReceipt(req.body as z.infer<typeof createSchema>);
@@ -53,7 +53,7 @@ router.post(
 // PUT /api/stock-receipts/:id
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
@@ -65,7 +65,7 @@ router.put(
 // DELETE /api/stock-receipts/:id — soft delete + reverse stock
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     await softDeleteReceipt(Number(req.params.id));
@@ -76,7 +76,7 @@ router.delete(
 // POST /api/stock-receipts/:id/restore — restore soft-deleted receipt + re-add stock
 router.post(
   "/:id/restore",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const restored = await restoreReceipt(Number(req.params.id));

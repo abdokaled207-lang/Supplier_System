@@ -4,7 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
-import { requireRole } from "../../middleware/auth";
+import { requireAdmin } from "../../middleware/auth";
 import { decorateOrder, assertTotalCoversPaid } from "../../domain/orderMoney";
 import { toOrderStatus, WIRE_ORDER_STATUSES } from "../../domain/enums";
 import { createOrder, transitionOrderStatus, editOrder } from "../../domain/fulfillment";
@@ -167,7 +167,7 @@ router.get(
 // DELETE /api/orders/:id — soft delete
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.order.findUnique({ where: { orderId: Number(req.params.id), deletedAt: null } });
@@ -185,7 +185,7 @@ router.delete(
 // POST /api/orders/:id/restore
 router.post(
   "/:id/restore",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.order.findUnique({ where: { orderId: Number(req.params.id), deletedAt: { not: null } } });

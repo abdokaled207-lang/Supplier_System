@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { requireRole } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
+import { listActivityLogs } from "./activityLogs.service";
 
 const router = Router();
 
@@ -11,27 +11,15 @@ router.get(
   "/",
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
-    const { skip, take, page, pageSize } = parsePagination(req.query);
-    const where: Record<string, unknown> = {};
-    if (req.query.entityType) where.entityType = req.query.entityType as string;
-    if (req.query.entityId) where.entityId = Number(req.query.entityId);
-
-    const [logs, total] = await Promise.all([
-      prisma.activityLog.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip,
-        take,
-      }),
-      prisma.activityLog.count({ where }),
-    ]);
-
-    const formatted = logs.map((log) => ({
-      ...log,
-      metadata: log.metadata ? JSON.parse(log.metadata as string) : null,
-    }));
-
-    res.json(paginated(formatted, total, page, pageSize));
+    const page = parsePagination(req.query);
+    const { logs, total } = await listActivityLogs(
+      {
+        entityType: req.query.entityType as string | undefined,
+        entityId: req.query.entityId ? Number(req.query.entityId) : undefined,
+      },
+      page,
+    );
+    res.json(paginated(logs, total, page.page, page.pageSize));
   }),
 );
 

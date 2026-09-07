@@ -40,7 +40,7 @@ router.get(
 // DELETE /api/payments/:id — soft delete
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     await softDeletePayment(Number(req.params.id));
@@ -51,7 +51,7 @@ router.delete(
 // POST /api/payments/:id/restore
 router.post(
   "/:id/restore",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const restored = await restorePayment(Number(req.params.id));

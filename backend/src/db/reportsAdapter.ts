@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { OrderStatus } from "@prisma/client";
 import { fromCents, toCents } from "../utils/money";
 import { orderTotals } from "../domain/orderMoney";
-import type { ReportsAdapter, DateRange } from "../domain/reports";
+import type { ReportsAdapter } from "../domain/reports";
 
 type Handle = Pick<PrismaClient, "order" | "customer" | "product" | "orderItem">;
 
