@@ -10,6 +10,7 @@ import stockReceiptsRoutes from "./modules/stockReceipts/stockReceipts.routes";
 import reportsRoutes from "./modules/reports/reports.routes";
 import searchRoutes from "./modules/search/search.routes";
 import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes";
+import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
 import { env } from "./config/env";
@@ -36,6 +37,10 @@ export function createApp() {
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
+  // Stored invoice PDFs are public by link (unpredictable names); mounted
+  // before the auth gate so customers can open links shared via WhatsApp.
+  app.use("/files/invoices", express.static(INVOICES_DIR));
+
   app.use("/api/auth", authRoutes);
   app.use("/api/health", healthRoutes);
 
@@ -49,6 +54,7 @@ export function createApp() {
   app.use("/api/reports", reportsRoutes);
   app.use("/api/search", searchRoutes);
   app.use("/api/activity-logs", activityLogsRoutes);
+  app.use("/api/invoices", invoicesRoutes);
 
   app.use(errorHandler);
 

@@ -1450,16 +1450,6 @@ tbody tr:hover {
 
 .inv-send-btn--disabled:hover { background: #9e9e9e; }
 
-.inv-send-hint {
-  background: #e3f2fd;
-  border: 1px solid #90caf9;
-  color: #0d47a1;
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 0.85rem;
-  margin-bottom: var(--space-3);
-}
-
 /* ===== PRINT ===== */
 @media print {
   .sidebar,

@@ -19,7 +19,6 @@ export function Invoice() {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [sendHint, setSendHint] = useState<string | null>(null);
 
   const orderQuery = useQuery({
     queryKey: ["order-invoice", id],
@@ -36,18 +35,7 @@ export function Invoice() {
   const order = orderQuery.data?.data;
   const settings = getAllSettings();
   const customerPhone = order?.customer?.phone ?? customerQuery.data?.data?.phone ?? "";
-  const messageText = order
-    ? [
-        `*INVOICE ${invoiceNumber(order.orderId)}*`,
-        settings.companyName || "ROTI CHANI KING",
-        `Date: ${formatShortDate(order.orderDate)}`,
-        `Customer: ${order.customer?.fullName ?? "—"}`,
-        `Sub Total: ${formatMoney(order.total)}`,
-        `Baki Tertunggak: ${formatMoney(customerQuery.data?.data?.outstandingBalance ?? order.balance)}`,
-        "Thank you for your support!",
-      ].join("\n")
-    : "";
-  const sendLink = order && customerPhone ? waMeLink(customerPhone, messageText) : null;
+  const canSend = !!order && !!customerPhone;
   const pdfFilename = order ? `${invoiceNumber(order.orderId)}.pdf` : "invoice.pdf";
 
   // Render the visible invoice sheet to a single-page A4 PDF.
@@ -69,58 +57,41 @@ export function Invoice() {
     return pdf.output("blob");
   }
 
+  function buildMessage(pdfUrl: string): string {
+    if (!order) return "";
+    return [
+      `*INVOICE ${invoiceNumber(order.orderId)}*`,
+      settings.companyName || "ROTI CHANI KING",
+      `Date: ${formatShortDate(order.orderDate)}`,
+      `Customer: ${order.customer?.fullName ?? "—"}`,
+      `Sub Total: ${formatMoney(order.total)}`,
+      `Baki Tertunggak: ${formatMoney(customerQuery.data?.data?.outstandingBalance ?? order.balance)}`,
+      `Invoice PDF: ${pdfUrl}`,
+      "Thank you for your support!",
+    ].join("\n");
+  }
+
   async function sendToCustomer() {
-    if (!order || !sendLink) return;
+    if (!order || !customerPhone) return;
     setSending(true);
     setSendError(null);
-    setSendHint(null);
-
-    // Open the customer's WhatsApp chat synchronously — browsers block
-    // window.open after the async PDF render, so this must happen first.
-    const chatWindow = window.open(sendLink, "_blank", "noopener,noreferrer");
 
     try {
+      // 1. Create the PDF from the on-screen invoice and store it on the
+      //    backend, which returns a public link the customer can open.
       const pdf = await generatePdf();
-      const file = new File([pdf], pdfFilename, { type: "application/pdf" });
+      const form = new FormData();
+      form.append("file", new File([pdf], pdfFilename, { type: "application/pdf" }));
+      form.append("orderId", String(order.orderId));
+      const uploaded = await api.postForm<{ data: { path: string } }>("/invoices", form);
+      const base = (import.meta.env.VITE_PUBLIC_URL as string | undefined)?.replace(/\/$/, "") || window.location.origin;
+      const pdfUrl = `${base}${uploaded.data.path}`;
 
-      // Native share sheet (Windows/Android/iOS): pick WhatsApp and the PDF
-      // goes straight into the current chat. Close the pre-opened tab.
-      if (navigator.canShare?.({ files: [file] })) {
-        chatWindow?.close();
-        await navigator.share({ files: [file], title: pdfFilename, text: messageText });
-        return;
-      }
-
-      // Fallback: put the PDF on the clipboard (Ctrl+V pastes it as a file)
-      // and download it as a backup.
-      let copied = false;
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ "application/pdf": pdf })]);
-        copied = true;
-      } catch {
-        try {
-          await navigator.clipboard.writeText(messageText);
-        } catch {
-          // clipboard unavailable — the downloaded file still works
-        }
-      }
-
-      const url = URL.createObjectURL(pdf);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = pdfFilename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-
-      setSendHint(
-        `${pdfFilename} downloaded. Paste it into the customer's WhatsApp chat that just opened (${copied ? "Ctrl+V" : "attach 📎"}), then send.`,
-      );
+      // 2. Open the current customer's WhatsApp chat with the PDF link.
+      window.open(waMeLink(customerPhone, buildMessage(pdfUrl))!, "_blank", "noopener,noreferrer");
     } catch (e) {
-      chatWindow?.close();
       if ((e as Error)?.name !== "AbortError") {
-        setSendError("Could not generate the PDF. Try again, or use Ctrl+P to print.");
+        setSendError("Could not upload the invoice PDF. Check the server connection and try again, or use Ctrl+P to print.");
       }
     } finally {
       setSending(false);
@@ -131,7 +102,7 @@ export function Invoice() {
     <div className="invoice-page">
       <div className="invoice-toolbar">
         <a href="/orders" className="secondary">← Back to Orders</a>
-        {sendLink ? (
+        {canSend ? (
           <button className="inv-send-btn" onClick={sendToCustomer} disabled={sending}>
             <WhatsAppIcon size={16} /> {sending ? "Preparing PDF…" : "Send to Customer"}
           </button>
@@ -143,7 +114,6 @@ export function Invoice() {
       </div>
 
       {sendError && <InlineError message={sendError} />}
-      {sendHint && <p className="inv-send-hint">{sendHint}</p>}
       {orderQuery.isLoading && <LoadingSkeleton rows={8} columns={4} />}
       {orderQuery.isError && <InlineError message={(orderQuery.error as Error)?.message ?? "Failed to load invoice"} />}
 

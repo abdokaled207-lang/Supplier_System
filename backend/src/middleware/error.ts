@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { AppError } from "../utils/http";
 import { UnderTotalError } from "../domain/orderMoney";
@@ -6,6 +7,11 @@ import { UnderTotalError } from "../domain/orderMoney";
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (error instanceof UnderTotalError) {
     res.status(409).json({ error: { code: "PAID_EXCEEDS_TOTAL", message: error.message, details: { newTotal: error.newTotal, paid: error.paid } } });
+    return;
+  }
+  if (error instanceof MulterError) {
+    const message = error.code === "LIMIT_FILE_SIZE" ? "File is too large (max 10 MB)" : "File upload failed";
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message } });
     return;
   }
   if (error instanceof AppError) {

@@ -47,6 +47,17 @@ export const api = {
   put: <T>(path: string, data: unknown) => request<T>(path, { method: "PUT", body: JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) => request<T>(path, { method: "PATCH", body: JSON.stringify(data) }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  // Multipart upload — caller must NOT set Content-Type (the boundary is in it).
+  postForm: <T>(path: string, form: FormData) => {
+    const headers = new Headers();
+    const token = getToken();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(`${BASE_URL}${path}`, { method: "POST", body: form, headers }).then(async (res) => {
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new ApiError(res.status, body ?? { error: { code: "INTERNAL_ERROR", message: res.statusText } });
+      return body as T;
+    });
+  },
 };
 
 // Fetch a server-generated file (CSV export) with the auth token and save it.

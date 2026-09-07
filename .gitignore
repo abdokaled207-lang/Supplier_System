@@ -36,3 +36,6 @@ docs/legacy/v4.sql
 
 # ngrok config (authtoken committed to this file must never be tracked in git)
 ngrok.yml
+
+# Stored invoice PDFs (served by the backend at /files/invoices)
+backend/storage/

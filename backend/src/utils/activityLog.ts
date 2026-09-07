@@ -8,7 +8,8 @@ export type ActivityAction =
   | "restored"
   | "status_changed"
   | "payment_recorded"
-  | "edited";
+  | "edited"
+  | "invoice_shared";
 
 export interface LogEntry {
   entityType: string;
