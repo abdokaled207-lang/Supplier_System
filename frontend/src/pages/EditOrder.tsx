@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "../api/client";
-import type { Customer, Order, Product } from "../api/types";
+import { useCustomers, useProducts } from "../api/hooks";
+import { formatMoney } from "../utils/money";
+import type { Order } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
@@ -27,8 +29,8 @@ export function EditOrder() {
     queryFn: () => api.get<{ data: Order }>(`/orders/${orderId}`),
     enabled: Number.isFinite(orderId) && orderId > 0,
   });
-  const products = useQuery({ queryKey: ["products"], queryFn: () => api.get<{ data: Product[] }>("/products") });
-  const customers = useQuery({ queryKey: ["customers"], queryFn: () => api.get<{ data: Customer[] }>("/customers") });
+  const products = useProducts();
+  const customers = useCustomers();
 
   const order = orderQuery.data?.data;
   const [customerId, setCustomerId] = useState("");
@@ -260,8 +262,8 @@ export function EditOrder() {
         )}
 
         <p>
-          New total: <span className="amount">{newTotal.toFixed(2)}</span> · Already paid: <span className="amount">{order.paid}</span> · Balance:{" "}
-          <span className="amount">{(newTotal - paid).toFixed(2)}</span>
+          New total: <span className="amount">{formatMoney(newTotal)}</span> · Already paid: <span className="amount">{formatMoney(order.paid)}</span> · Balance:{" "}
+          <span className="amount">{formatMoney(newTotal - paid)}</span>
         </p>
 
         <div className="inline-form">
@@ -308,7 +310,7 @@ export function EditOrder() {
       {pendingSave === "underTotal" && (
         <ConfirmDialog
           title="Paid amount exceeds the new total"
-          message={`This order has RM ${order.paid} already paid, but the edited total is RM ${newTotal.toFixed(2)}. Saving will leave a negative balance. Proceed anyway?`}
+          message={`This order has ${formatMoney(order.paid)} already paid, but the edited total is ${formatMoney(newTotal)}. Saving will leave a negative balance. Proceed anyway?`}
           confirmLabel="Save anyway"
           variant="warning"
           onConfirm={() => {

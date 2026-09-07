@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { formatMoney } from "../utils/money";
 import type { Product } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditProductModal } from "../components/EditProductModal";
@@ -206,7 +207,7 @@ export function Products() {
                       {p.productName}
                     </span>
                   </td>
-                  <td className="amount">RM {p.unitPrice}</td>
+                  <td className="amount">{formatMoney(p.unitPrice)}</td>
                   <td className="qty">{p.stockQuantity}</td>
                   <td>{stockBadge(p)}</td>
                   <td>

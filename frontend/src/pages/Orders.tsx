@@ -2,7 +2,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
-import type { Customer, Order, OrderStatus, PaymentType, Product } from "../api/types";
+import { useCustomers, useProducts } from "../api/hooks";
+import type { Order, OrderStatus, PaymentType } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
 import { InlineError } from "../components/InlineError";
@@ -52,8 +53,8 @@ export function Orders() {
     queryKey: ["orders-page", page],
     queryFn: () => api.get<{ data: Order[]; total: number; page: number; pageSize: number }>(`/orders?page=${page}&pageSize=${PAGE_SIZE}`),
   });
-  const products = useQuery({ queryKey: ["products"], queryFn: () => api.get<{ data: Product[] }>("/products") });
-  const customers = useQuery({ queryKey: ["customers"], queryFn: () => api.get<{ data: Customer[] }>("/customers") });
+  const products = useProducts();
+  const customers = useCustomers();
 
   const [customerId, setCustomerId] = useState("");
   const [productId, setProductId] = useState("");

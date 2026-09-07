@@ -5,14 +5,8 @@ import type { CustomerProfile, Order } from "../api/types";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { InlineError } from "../components/InlineError";
 import { getAllSettings, invoiceNumber } from "../utils/settings";
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+import { formatShortDate } from "../utils/datetime";
+import { formatMoney } from "../utils/money";
 
 export function Invoice() {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +46,7 @@ export function Invoice() {
 function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstandingBalance?: string }) {
   const settings = getAllSettings();
   const invNum = invoiceNumber(order.orderId);
-  const invDate = formatDate(order.orderDate);
+  const invDate = formatShortDate(order.orderDate);
   const customer = order.customer;
 
   const currentBalance = Number(order.balance);
@@ -134,8 +128,8 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
                   <span className="inv-unit-label"> unit</span>
                 )}
               </td>
-              <td className="inv-td-price">RM {item.unitPrice}</td>
-              <td className="inv-td-total">RM {item.subtotal}</td>
+              <td className="inv-td-price">{formatMoney(item.unitPrice)}</td>
+              <td className="inv-td-total">{formatMoney(item.subtotal)}</td>
             </tr>
           ))}
         </tbody>
@@ -146,17 +140,17 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
         <div className="inv-totals-right">
           <div className="inv-totals-row">
             <span>SUB TOTAL</span>
-            <span className="inv-amount">RM {order.total}</span>
+            <span className="inv-amount">{formatMoney(order.total)}</span>
           </div>
           {bakiTertunggak > 0 && (
             <div className="inv-totals-row">
               <span>BAKI TERTUNGGAK</span>
-              <span className="inv-amount">RM {bakiTertunggak.toFixed(2)}</span>
+              <span className="inv-amount">{formatMoney(bakiTertunggak)}</span>
             </div>
           )}
           <div className="inv-grand-total-row">
             <span className="inv-grand-label">GRAND TOTAL</span>
-            <span className="inv-grand-amount">RM {grandTotal.toFixed(2)}</span>
+            <span className="inv-grand-amount">{formatMoney(grandTotal)}</span>
           </div>
         </div>
       </div>

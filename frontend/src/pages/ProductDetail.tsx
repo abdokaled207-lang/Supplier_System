@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { formatMoney } from "../utils/money";
 import type { OrderStatus } from "../api/types";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
@@ -33,7 +34,7 @@ export function ProductDetail() {
           <tbody>
             <tr>
               <th>Unit price</th>
-              <td className="amount">RM{product.unitPrice}</td>
+              <td className="amount">{formatMoney(product.unitPrice)}</td>
             </tr>
             <tr>
               <th>In stock</th>
@@ -73,7 +74,7 @@ export function ProductDetail() {
                     <td>{o.customerName}</td>
                     <td>{o.status}</td>
                     <td className="qty">x{o.quantity}</td>
-                    <td className="amount">RM{o.subtotal}</td>
+                    <td className="amount">{formatMoney(o.subtotal)}</td>
                   </tr>
                 ))}
               </tbody>

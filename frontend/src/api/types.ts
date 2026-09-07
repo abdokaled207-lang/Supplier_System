@@ -88,6 +88,16 @@ export interface TodaySales {
   count: number;
 }
 
+export interface DashboardStats {
+  totalOrders: number;
+  statusCounts: Record<string, number>;
+  openOrders: number;
+  revenue: string;
+  outstanding: string;
+  todaySales: TodaySales;
+  lowStock: { productId: number; productName: string; imageUrl?: string; stockQuantity: number }[];
+}
+
 export interface ActivityLog {
   id: number;
   entityType: string;

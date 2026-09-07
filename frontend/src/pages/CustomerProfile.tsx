@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { formatMoney } from "../utils/money";
 import type { CustomerProfile, OrderStatus } from "../api/types";
 import { useAuth } from "../auth/auth";
 import { InlineError } from "../components/InlineError";
@@ -170,7 +171,7 @@ function ProfileContent({ customer }: { customer: CustomerProfile }) {
           </div>
           <div className={`profile-balance${balanceCents > 0 ? " profile-balance--overdue" : ""}`}>
             <span className="profile-balance-label">Outstanding</span>
-            <span className="profile-balance-value">RM {customer.outstandingBalance}</span>
+            <span className="profile-balance-value">{formatMoney(customer.outstandingBalance)}</span>
           </div>
         </div>
       </div>

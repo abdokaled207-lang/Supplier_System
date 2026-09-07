@@ -17,6 +17,8 @@ export function ProductImage({ imageUrl, productName, size = 24 }: Props) {
         alt={productName}
         width={size}
         height={size}
+        loading="lazy"
+        decoding="async"
         style={{ borderRadius: "4px", objectFit: "cover", flexShrink: 0 }}
         onError={() => setImgError(true)}
       />
