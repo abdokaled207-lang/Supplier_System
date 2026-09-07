@@ -14,6 +14,15 @@ import { formatShortDate } from "../utils/datetime";
 import { formatMoney } from "../utils/money";
 import { waMeLink } from "../utils/phone";
 
+
+// External hosts rarely send CORS headers, so html2canvas drops their images
+// from the generated PDF. Route them through the backend's same-origin proxy.
+function proxiedImageUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("data:") || url.startsWith("/")) return url;
+  return `/proxy-image?url=${encodeURIComponent(url)}`;
+}
+
 export function Invoice() {
   const { id } = useParams<{ id: string }>();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -155,7 +164,7 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
       <div className="inv-header-row">
         <div className="inv-header-logo">
           {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="Company logo" className="inv-logo" />
+            <img src={proxiedImageUrl(settings.logoUrl)} alt="Company logo" className="inv-logo" />
           ) : (
             <div className="inv-logo-placeholder" aria-hidden="true">
               <span>{settings.companyName ? settings.companyName.charAt(0) : "R"}</span>
@@ -279,7 +288,7 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
           <div className="inv-signature-block">
             <p>For, {settings.companyName || "ROTI CHANI KING"}</p>
             {settings.signatureUrl ? (
-              <img src={settings.signatureUrl} alt="Authorized signature" className="inv-signature-img" />
+              <img src={proxiedImageUrl(settings.signatureUrl)} alt="Authorized signature" className="inv-signature-img" />
             ) : (
               <div className="inv-sig-line">
                 <p>AUTHORIZED SIGNATURE</p>

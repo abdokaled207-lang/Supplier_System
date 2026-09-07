@@ -11,6 +11,7 @@ import reportsRoutes from "./modules/reports/reports.routes";
 import searchRoutes from "./modules/search/search.routes";
 import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes";
 import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes";
+import imageProxyRoutes from "./modules/images/images.routes";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
 import { env } from "./config/env";
@@ -40,6 +41,9 @@ export function createApp() {
   // Stored invoice PDFs are public by link (unpredictable names); mounted
   // before the auth gate so customers can open links shared via WhatsApp.
   app.use("/files/invoices", express.static(INVOICES_DIR));
+
+  // Same-origin image proxy so invoice logo/signature render into the PDF.
+  app.use("/proxy-image", imageProxyRoutes);
 
   app.use("/api/auth", authRoutes);
   app.use("/api/health", healthRoutes);
