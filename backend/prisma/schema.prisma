@@ -55,6 +55,7 @@ model Order {
   payments Payment[]
 
   @@index([customerId])
+  @@index([customerId, orderDate])
   @@index([status])
   @@index([orderDate])
   @@map("Orders")
