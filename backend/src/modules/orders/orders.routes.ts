@@ -106,12 +106,12 @@ router.put(
     const existing = await orderDb.getOrder(Number(req.params.id));
     if (!existing) throw errors.notFound("Order not found");
 
-    const productRows = await Promise.all(body.items.map((it) => orderDb.getProduct(it.productId)));
-    const missing = productRows.find((p) => !p);
+    const productRows = await orderDb.getProducts([...new Set(body.items.map((it) => it.productId))]);
+    const missing = body.items.find((it) => !productRows.get(it.productId));
     if (missing) throw errors.notFound("One or more products not found");
 
     assertTotalCoversPaid(
-      body.items.map((it, i) => ({ quantity: it.quantity, unitPrice: productRows[i]!.unitPrice })),
+      body.items.map((it) => ({ quantity: it.quantity, unitPrice: productRows.get(it.productId)!.unitPrice })),
       existing.payments.map((p) => p.amount),
       body.acknowledgeUnderTotal ?? false,
     );

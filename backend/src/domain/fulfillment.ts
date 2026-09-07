@@ -82,7 +82,7 @@ export interface EditOrderInput {
 // adapter (db/orderAdapter.ts) and an in-memory fake (tests/fulfillment.test.ts).
 export interface OrderAdapter {
   getCustomer(customerId: number): Promise<CustomerRow | null>;
-  getProduct(productId: number): Promise<ProductRow | null>;
+  getProducts(productIds: number[]): Promise<Map<number, ProductRow>>;
   getOrder(orderId: number): Promise<OrderRow | null>;
   setOrderStatus(orderId: number, status: OrderStatus): Promise<OrderRow>;
   createOrder(data: CreateOrderData): Promise<OrderRow>;
@@ -93,9 +93,10 @@ export interface OrderAdapter {
 }
 
 async function assertStockAvailable(db: OrderAdapter, items: StockLine[]): Promise<void> {
+  const productMap = await db.getProducts([...new Set(items.map((i) => i.productId))]);
   const short: { productId: number; name: string; requested: number; available: number }[] = [];
   for (const item of items) {
-    const product = await db.getProduct(item.productId);
+    const product = productMap.get(item.productId);
     if (!product) throw errors.notFound(`Product ${item.productId} not found`);
     if (product.stockQuantity < item.quantity) {
       short.push({
@@ -117,8 +118,9 @@ export async function createOrder(db: OrderAdapter, input: CreateOrderInput): Pr
 
   const unitPrices = new Map<number, Money>();
   const productNames = new Map<number, string>();
+  const productMap = await db.getProducts([...new Set(input.items.map((i) => i.productId))]);
   for (const item of input.items) {
-    const product = await db.getProduct(item.productId);
+    const product = productMap.get(item.productId);
     if (!product) throw errors.notFound(`Product ${item.productId} not found`);
     unitPrices.set(item.productId, product.unitPrice);
     productNames.set(item.productId, product.productName);
@@ -169,8 +171,9 @@ export async function editOrder(
 
     const unitPrices = new Map<number, Money>();
     const productNames = new Map<number, string>();
+    const productMap = await tx.getProducts([...new Set(input.items.map((i) => i.productId))]);
     for (const item of input.items) {
-      const product = await tx.getProduct(item.productId);
+      const product = productMap.get(item.productId);
       if (!product) throw errors.notFound(`Product ${item.productId} not found`);
       unitPrices.set(item.productId, product.unitPrice);
       productNames.set(item.productId, product.productName);

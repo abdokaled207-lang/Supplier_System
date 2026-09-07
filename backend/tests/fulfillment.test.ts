@@ -20,7 +20,7 @@ function makeFakeDb() {
 
   const db: OrderAdapter = {
     getCustomer: async (customerId) => (customerId > 0 ? { customerId } : null),
-    getProduct: async (productId) => products.get(productId) ?? null,
+    getProducts: async (productIds) => new Map(productIds.filter((id) => products.has(id)).map((id) => [id, products.get(id)!])),
     getOrder: async (orderId) => orders.get(orderId) ?? null,
     setOrderStatus: async (orderId, status) => {
       const order = orders.get(orderId);

@@ -14,7 +14,11 @@ export const ORDER_WITH = {
 function makeAdapter(handle: Handle): OrderAdapter {
   return {
     getCustomer: (customerId) => handle.customer.findUnique({ where: { customerId } }),
-    getProduct: (productId) => handle.product.findUnique({ where: { productId } }),
+    getProducts: async (productIds) => {
+      if (!productIds.length) return new Map();
+      const rows = await handle.product.findMany({ where: { productId: { in: productIds } } });
+      return new Map(rows.map((row) => [row.productId, row]));
+    },
     getOrder: (orderId) =>
       handle.order.findUnique({ where: { orderId }, include: ORDER_WITH }) as unknown as Promise<OrderRow | null>,
     setOrderStatus: (orderId, status) =>
