@@ -12,6 +12,8 @@ import searchRoutes from "./modules/search/search.routes";
 import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes";
 import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes";
 import imageProxyRoutes from "./modules/images/images.routes";
+import usersRoutes from "./modules/users/users.routes";
+import deliveryAreasRoutes from "./modules/deliveryAreas/deliveryAreas.routes";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
 import { env } from "./config/env";
@@ -59,6 +61,8 @@ export function createApp() {
   app.use("/api/search", searchRoutes);
   app.use("/api/activity-logs", activityLogsRoutes);
   app.use("/api/invoices", invoicesRoutes);
+  app.use("/api/users", usersRoutes);
+  app.use("/api/delivery-areas", deliveryAreasRoutes);
 
   app.use(errorHandler);
 

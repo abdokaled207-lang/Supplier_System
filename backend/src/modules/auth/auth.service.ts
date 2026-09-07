@@ -8,7 +8,7 @@ function toWireRole(role: string) {
 }
 
 export async function login(credentials: { email: string; password: string }) {
-  const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+  const user = await prisma.user.findUnique({ where: { email: credentials.email, deletedAt: null } });
   if (!user || !(await bcrypt.compare(credentials.password, user.passwordHash))) {
     throw errors.unauthorized("Invalid email or password");
   }

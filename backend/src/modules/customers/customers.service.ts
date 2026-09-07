@@ -44,13 +44,13 @@ export async function getCustomerProfile(id: number) {
   };
 }
 
-export async function createCustomer(data: { fullName: string; phone: string; gpsLink?: string | null; address?: string | null }) {
+export async function createCustomer(data: { fullName: string; phone: string; gpsLink?: string | null; address?: string | null; area?: string | null }) {
   const customer = await prisma.customer.create({ data });
   await logActivity({ entityType: "customer", entityId: customer.customerId, action: "created", description: `Customer "${customer.fullName}" created` });
   return customer;
 }
 
-export async function updateCustomer(id: number, data: Partial<{ fullName: string; phone: string; gpsLink?: string | null; address?: string | null }>) {
+export async function updateCustomer(id: number, data: Partial<{ fullName: string; phone: string; gpsLink?: string | null; address?: string | null; area?: string | null }>) {
   const existing = await prisma.customer.findUnique({ where: { customerId: id, deletedAt: null } });
   if (!existing) throw errors.notFound("Customer not found");
 

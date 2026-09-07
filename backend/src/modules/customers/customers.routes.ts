@@ -26,6 +26,7 @@ const createSchema = z.object({
       message: "GPS link must start with http",
     }),
   address: z.string().nullable().optional(),
+  area: z.string().max(150).nullable().optional(),
 });
 
 const updateSchema = createSchema.partial();
