@@ -11,7 +11,7 @@ vi.mock("../src/db/prisma", () => ({
 }));
 
 const app = createApp();
-const token = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
 
 const product = { productId: 1, productName: "Roti Chani", unitPrice: "4.00", stockQuantity: 10, createdAt: "2026-09-01T00:00:00.000Z" };
 
@@ -61,6 +61,7 @@ it("lists products with a pagination envelope", async () => {
   });
 
   it("updates a product", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ productId: 1, productName: "Roti Chani", unitPrice: "4.00", imageUrl: "" } as never);
     vi.mocked(prisma.product.update).mockResolvedValue({ ...product, unitPrice: "5.00" } as never);
 
     const res = await authed("put", "/api/products/1").send({ unitPrice: "5.00" });
@@ -68,18 +69,23 @@ it("lists products with a pagination envelope", async () => {
     expect(res.body.data.unitPrice).toBe("5.00");
   });
 
-  it("deletes a product (204)", async () => {
-    vi.mocked(prisma.product.delete).mockResolvedValue(product as never);
+  it("deletes a product via soft delete (204)", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({ productId: 1, productName: "Roti Chani" } as never);
+    vi.mocked(prisma.product.update).mockResolvedValue(product as never);
 
     const res = await authed("delete", "/api/products/1");
     expect(res.status).toBe(204);
+    expect(prisma.product.update).toHaveBeenCalledWith({
+      where: { productId: 1 },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
-  it("returns 409 when a product is referenced by orders or receipts", async () => {
-    vi.mocked(prisma.product.delete).mockRejectedValue(new Error("FK violation"));
+  it("returns 404 when deleting a missing product", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null);
 
-    const res = await authed("delete", "/api/products/1");
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe("CONFLICT");
+    const res = await authed("delete", "/api/products/999");
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
   });
 });

@@ -30,7 +30,7 @@ describe("auth", () => {
     const res = await request(app).post("/api/auth/login").send({ email: "admin@roti.local", password: "Admin123!" });
     expect(res.status).toBe(200);
     expect(res.body.token).toBeDefined();
-    expect(res.body.user).toEqual({ id: 1, email: "admin@roti.local", role: "ADMIN" });
+    expect(res.body.user).toEqual({ id: 1, email: "admin@roti.local", role: "admin" });
   });
 
   it("rejects an invalid password", async () => {
@@ -63,7 +63,7 @@ describe("auth", () => {
   });
 
   it("GET /api/auth/me returns the user from a valid token", async () => {
-    const validToken = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+    const validToken = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
     const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${validToken}`);
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({ id: 1, email: "admin@roti.local", role: "admin" });

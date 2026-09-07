@@ -1589,3 +1589,20 @@ tbody tr:hover {
   width: 4rem;
   margin-left: 0.5rem;
 }
+.edit-action {
+  color: #16a34a;
+  text-decoration: none;
+  border-color: #16a34a;
+}
+.edit-action:hover {
+  text-decoration: underline;
+}
+
+.invoice-action {
+  color: #2563eb;
+  text-decoration: none;
+  border-color: #2563eb;
+}
+.invoice-action:hover {
+  text-decoration: underline;
+}

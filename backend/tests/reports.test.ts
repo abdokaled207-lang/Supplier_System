@@ -15,7 +15,7 @@ vi.mock("../src/db/prisma", () => ({
 }));
 
 const app = createApp();
-const token = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
 
 function authed(path: string) {
   return request(app).get(path).set("Authorization", `Bearer ${token}`);

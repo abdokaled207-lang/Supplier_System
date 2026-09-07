@@ -11,7 +11,7 @@ vi.mock("../src/db/prisma", () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
-      delete: vi.fn(),
+      update: vi.fn(),
       count: vi.fn(),
     },
     $transaction: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("../src/db/prisma", () => ({
 }));
 
 const app = createApp();
-const token = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
 
 const product = { productId: 1, productName: "Roti Chani", unitPrice: "4.00", stockQuantity: 10, createdAt: new Date() };
 const receipt = { receiptId: 5, productId: 1, quantity: 3, receiptDate: new Date(), notes: null };
@@ -84,7 +84,7 @@ describe("stock receipts", () => {
 
   it("deleting a receipt decrements stock inside a transaction", async () => {
     withTx();
-    vi.mocked(prisma.stockReceipt.findUnique).mockResolvedValue(receipt as never);
+    vi.mocked(prisma.stockReceipt.findUnique).mockResolvedValue({ ...receipt, product } as never);
 
     const res = await authed("delete", "/api/stock-receipts/5");
     expect(res.status).toBe(204);
@@ -92,7 +92,10 @@ describe("stock receipts", () => {
       where: { productId: 1 },
       data: { stockQuantity: { decrement: 3 } },
     });
-    expect(prisma.stockReceipt.delete).toHaveBeenCalledWith({ where: { receiptId: 5 } });
+    expect(prisma.stockReceipt.update).toHaveBeenCalledWith({
+      where: { receiptId: 5 },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
   it("returns 404 when deleting a missing receipt", async () => {

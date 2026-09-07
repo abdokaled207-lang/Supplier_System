@@ -4,6 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
+import { requireRole } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
 import { decorateOrder } from "../../domain/orderMoney";
 import { toCents, fromCents } from "../../utils/money";
@@ -93,6 +94,7 @@ router.post(
 // PUT /api/customers/:id
 router.put(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
@@ -111,6 +113,7 @@ router.put(
 // DELETE /api/customers/:id — soft delete
 router.delete(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.customer.findUnique({ where: { customerId: Number(req.params.id), deletedAt: null } });
@@ -128,6 +131,7 @@ router.delete(
 // POST /api/customers/:id/restore — restore soft-deleted customer
 router.post(
   "/:id/restore",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.customer.findUnique({ where: { customerId: Number(req.params.id), deletedAt: { not: null } } });

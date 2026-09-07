@@ -4,6 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
+import { requireRole } from "../../middleware/auth";
 import { orderTotals, paymentStatusFor } from "../../domain/orderMoney";
 import { toCents } from "../../utils/money";
 import { toPaymentType, WIRE_PAYMENT_TYPES } from "../../domain/enums";
@@ -63,6 +64,7 @@ router.get(
 // DELETE /api/payments/:id — soft delete
 router.delete(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const payment = await prisma.payment.findUnique({ where: { paymentId: Number(req.params.id), deletedAt: null } });
@@ -80,6 +82,7 @@ router.delete(
 // POST /api/payments/:id/restore
 router.post(
   "/:id/restore",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const payment = await prisma.payment.findUnique({ where: { paymentId: Number(req.params.id), deletedAt: { not: null } } });

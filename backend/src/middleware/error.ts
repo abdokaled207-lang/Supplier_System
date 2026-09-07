@@ -1,8 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../utils/http";
+import { UnderTotalError } from "../domain/orderMoney";
 
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction): void {
+  if (error instanceof UnderTotalError) {
+    res.status(409).json({ error: { code: "PAID_EXCEEDS_TOTAL", message: error.message, details: { newTotal: error.newTotal, paid: error.paid } } });
+    return;
+  }
   if (error instanceof AppError) {
     res.status(error.status).json({ error: { code: error.code, message: error.message, details: error.details } });
     return;

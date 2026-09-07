@@ -4,7 +4,8 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
-import { decorateOrder } from "../../domain/orderMoney";
+import { requireRole } from "../../middleware/auth";
+import { decorateOrder, assertTotalCoversPaid } from "../../domain/orderMoney";
 import { toOrderStatus, WIRE_ORDER_STATUSES } from "../../domain/enums";
 import { createOrder, transitionOrderStatus, editOrder } from "../../domain/fulfillment";
 import { orderDb, ORDER_WITH } from "../../db/orderAdapter";
@@ -101,31 +102,19 @@ router.put(
   validate(paramsSchema, "params"),
   validate(editSchema),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.order.findUnique({
-      where: { orderId: Number(req.params.id), deletedAt: null },
-      include: ORDER_WITH,
-    });
+    const body = req.body as z.infer<typeof editSchema>;
+    const existing = await orderDb.getOrder(Number(req.params.id));
     if (!existing) throw errors.notFound("Order not found");
 
-    const body = req.body as z.infer<typeof editSchema>;
-
-    const productRows = await Promise.all(
-      body.items.map((item) => prisma.product.findUnique({ where: { productId: item.productId } })),
-    );
+    const productRows = await Promise.all(body.items.map((it) => orderDb.getProduct(it.productId)));
     const missing = productRows.find((p) => !p);
     if (missing) throw errors.notFound("One or more products not found");
 
-    const paidCents = existing.payments.reduce((sum, p) => sum + Math.round(Number(p.amount) * 100), 0);
-    const newTotalCents = body.items.reduce((sum, item, i) => {
-      return sum + item.quantity * Math.round(Number(productRows[i]!.unitPrice) * 100);
-    }, 0);
-
-    if (newTotalCents < paidCents && !body.acknowledgeUnderTotal) {
-      throw errors.paidExceedsTotal(
-        `New total (RM ${(newTotalCents / 100).toFixed(2)}) is below the already-paid amount (RM ${(paidCents / 100).toFixed(2)}). Confirm to proceed.`,
-        { newTotal: (newTotalCents / 100).toFixed(2), paid: (paidCents / 100).toFixed(2) },
-      );
-    }
+    assertTotalCoversPaid(
+      body.items.map((it, i) => ({ quantity: it.quantity, unitPrice: productRows[i]!.unitPrice })),
+      existing.payments.map((p) => p.amount),
+      body.acknowledgeUnderTotal ?? false,
+    );
 
     const order = await editOrder(orderDb, Number(req.params.id), {
       customerId: body.customerId,
@@ -178,6 +167,7 @@ router.get(
 // DELETE /api/orders/:id — soft delete
 router.delete(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.order.findUnique({ where: { orderId: Number(req.params.id), deletedAt: null } });
@@ -195,6 +185,7 @@ router.delete(
 // POST /api/orders/:id/restore
 router.post(
   "/:id/restore",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.order.findUnique({ where: { orderId: Number(req.params.id), deletedAt: { not: null } } });

@@ -1,3 +1,4 @@
+// import { type ReactElement, cloneElement } from "react";
 import { type ReactElement, cloneElement } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +8,7 @@ import { EmptyState } from "../components/EmptyState";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { getSetting } from "../utils/settings";
+// import { Clock, Settings, Truck, CheckCircle, XCircle } from "lucide-react";
 import { Clock, Settings, Truck, CheckCircle, XCircle } from "lucide-react";
 import { ProductImage } from "../components/ProductImage";
 
@@ -176,3 +178,4 @@ export function Dashboard() {
     </section>
   );
 }
+

@@ -18,7 +18,7 @@ with the project's documented source of truth. You only read and report.
 1. `AGENTS.md` — architecture rules, domain-module boundaries, business rules, commands, gotchas.
 2. `CONTEXT.md` — shared domain vocabulary (Customer, Product, Order, Order Item, Payment, Stock Receipt, User).
 3. `README.md` — stack, wiring, API surface, stock rules.
-4. `backend/prisma/schema.prisma` — the live DB schema (Prisma migrations are authoritative; `Roti_chani_system_v3.sql` is reference only).
+4. `backend/prisma/schema.prisma` — the live DB schema (Prisma migrations are authoritative; `docs/legacy/v3.sql` is reference only).
 5. `backend/src/domain/*` — the domain modules are the source of truth for business rules (fulfillment, orderStatus, orderMoney, enums).
 
 ## Rules you must follow

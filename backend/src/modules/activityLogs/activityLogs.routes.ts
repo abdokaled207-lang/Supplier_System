@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
+import { requireRole } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
 
 const router = Router();
@@ -8,6 +9,7 @@ const router = Router();
 // GET /api/activity-logs?page=&pageSize=&entityType=&entityId=
 router.get(
   "/",
+  requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const { skip, take, page, pageSize } = parsePagination(req.query);
     const where: Record<string, unknown> = {};

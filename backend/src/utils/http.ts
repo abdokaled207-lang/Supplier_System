@@ -17,7 +17,6 @@ export const errors = {
   forbidden: (msg = "Forbidden") => new AppError(403, "FORBIDDEN", msg),
   notFound: (msg = "Not found") => new AppError(404, "NOT_FOUND", msg),
   conflict: (msg = "Conflict") => new AppError(409, "CONFLICT", msg),
-  paidExceedsTotal: (msg: string, details?: unknown) => new AppError(409, "PAID_EXCEEDS_TOTAL", msg, details),
   insufficientStock: (msg = "Insufficient stock", details?: unknown) =>
     new AppError(409, "INSUFFICIENT_STOCK", msg, details),
   tooManyRequests: (msg = "Too many requests") => new AppError(429, "TOO_MANY_REQUESTS", msg),

@@ -12,10 +12,26 @@ import searchRoutes from "./modules/search/search.routes";
 import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
+import { env } from "./config/env";
 
 export function createApp() {
   const app = express();
-  app.use(cors());
+
+  // Restrict cross-origin access to an explicit allowlist in production; fall
+  // back to permissive CORS only for local development.
+  const allowedOrigins = env.CORS_ORIGIN
+    ? env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+    : [];
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (env.NODE_ENV !== "production" || !origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+      },
+    }),
+  );
   app.use(express.json());
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));

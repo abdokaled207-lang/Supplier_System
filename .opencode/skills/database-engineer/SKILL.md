@@ -10,7 +10,7 @@ Data-layer guidance for the actual stack (the PostgreSQL/pgvector references in 
 ## Source of truth (read first)
 
 - **Live schema = Prisma migrations** at `backend/prisma/migrations/`, models in `backend/prisma/schema.prisma`. Never edit an applied migration — create a new one via `npm run db:dev` (AGENTS.md §Source of truth).
-- `Roti_chani_system_v3.sql` is reference-only and **diverges** from the app schema. Do not treat it as current.
+- `docs/legacy/v3.sql` is the original schema dump (reference only) and **diverges** from the app schema. Do not treat it as current.
 - Seed (4 products + admin user) lives in `backend/prisma/seed.ts`.
 
 ## Schema conventions

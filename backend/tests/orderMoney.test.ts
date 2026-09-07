@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderTotals, paymentStatusFor, decorateOrder } from "../src/domain/orderMoney";
+import { assertTotalCoversPaid, decorateOrder, orderTotals, paymentStatusFor, UnderTotalError } from "../src/domain/orderMoney";
 import { toCents } from "../src/utils/money";
 
 describe("orderTotals", () => {
@@ -27,6 +27,37 @@ describe("paymentStatusFor", () => {
     expect(paymentStatusFor(toCents("100.00"), toCents("100.00"))).toBe("PAID");
     expect(paymentStatusFor(toCents("100.00"), toCents("50.00"))).toBe("PARTIAL");
     expect(paymentStatusFor(toCents("100.00"), toCents("0"))).toBe("UNPAID");
+  });
+});
+
+describe("assertTotalCoversPaid", () => {
+  it("returns formatted totals when the new total covers the already-paid amount", () => {
+    const result = assertTotalCoversPaid(
+      [{ quantity: 2, unitPrice: "20.00" }],
+      ["10.00"],
+      false,
+    );
+    expect(result).toEqual({ newTotal: "40.00", paid: "10.00" });
+  });
+
+  it("throws UnderTotalError when the new total is below what has been paid", () => {
+    expect(() =>
+      assertTotalCoversPaid(
+        [{ quantity: 1, unitPrice: "5.00" }],
+        ["10.00"],
+        false,
+      ),
+    ).toThrow(UnderTotalError);
+  });
+
+  it("does not throw when acknowledgeUnderTotal is true even if paid exceeds the new total", () => {
+    const result = assertTotalCoversPaid(
+      [{ quantity: 1, unitPrice: "5.00" }],
+      ["10.00"],
+      true,
+    );
+    expect(result.newTotal).toBe("5.00");
+    expect(result.paid).toBe("10.00");
   });
 });
 

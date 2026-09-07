@@ -4,6 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
+import { requireRole } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
 import { logActivity } from "../../utils/activityLog";
 import { fromCents, toCents } from "../../utils/money";
@@ -92,6 +93,7 @@ router.get(
 // POST /api/products
 router.post(
   "/",
+  requireRole("ADMIN"),
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const product = await prisma.product.create({ data: req.body });
@@ -103,6 +105,7 @@ router.post(
 // PUT /api/products/:id
 router.put(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
@@ -148,6 +151,7 @@ router.put(
 // DELETE /api/products/:id — soft delete
 router.delete(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.product.findUnique({
@@ -168,6 +172,7 @@ router.delete(
 // POST /api/products/:id/restore — restore soft-deleted product
 router.post(
   "/:id/restore",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const existing = await prisma.product.findUnique({

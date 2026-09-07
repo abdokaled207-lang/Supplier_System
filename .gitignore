@@ -17,9 +17,22 @@ npm-debug.log*
 # Prisma
 backend/prisma/*.db
 
+# Debug scripts & DB scratch/helper files
+backend/debug-login.ts
+backend/*.sql
+*_fix.sql
+*_check.sql
+backup_*.sql
+
 # OS
 .DS_Store
 Thumbs.db
 
 # Dev / local servers
 xampp/
+
+# Generated / ephemeral legacy schema snapshots
+docs/legacy/v4.sql
+
+# ngrok config (authtoken committed to this file must never be tracked in git)
+ngrok.yml

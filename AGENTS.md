@@ -5,7 +5,7 @@ Roti Chani System — a full-stack order/stock/payment app. Two workspaces: `bac
 ## Source of truth
 
 - **Live schema = Prisma migrations** at `backend/prisma/migrations/` (models in `backend/prisma/schema.prisma`). Never edit an applied migration; create a new one via `npm run db:dev`.
-- `Roti_chani_system_v3.sql` is **reference only** and now diverges from the app schema. Do not treat it as current.
+- `docs/legacy/v3.sql` is the original schema dump (**reference only**) and diverges from the app schema. Do not treat it as current.
 - Seed data (products + admin user) lives in `backend/prisma/seed.ts`.
 
 ## Commands

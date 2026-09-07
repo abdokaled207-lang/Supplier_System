@@ -4,6 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
+import { requireRole } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
 import { logActivity } from "../../utils/activityLog";
 
@@ -46,6 +47,7 @@ router.get(
 // POST /api/stock-receipts
 router.post(
   "/",
+  requireRole("ADMIN"),
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const { productId, quantity, receiptDate, notes } = req.body;
@@ -76,6 +78,7 @@ router.post(
 // PUT /api/stock-receipts/:id
 router.put(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
@@ -118,6 +121,7 @@ router.put(
 // DELETE /api/stock-receipts/:id — soft delete + reverse stock
 router.delete(
   "/:id",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const receipt = await prisma.stockReceipt.findUnique({
@@ -145,6 +149,7 @@ router.delete(
 // POST /api/stock-receipts/:id/restore — restore soft-deleted receipt + re-add stock
 router.post(
   "/:id/restore",
+  requireRole("ADMIN"),
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
     const receipt = await prisma.stockReceipt.findUnique({

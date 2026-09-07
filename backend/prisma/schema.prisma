@@ -1,5 +1,5 @@
 // Roti Chani System schema.
-// Source of truth for the DB. The `Roti_chani_system_v3.sql` dump is reference only.
+// Source of truth for the DB. The `docs/legacy/v3.sql` dump is reference only; the live schema is the Prisma migrations.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,21 +9,21 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
 model Customer {
   customerId Int       @id @default(autoincrement()) @map("customer_id")
   fullName   String    @map("full_name") @db.VarChar(150)
   phone      String    @unique @map("phone") @db.VarChar(20)
   gpsLink    String?  @map("gps_link") @db.VarChar(500)
   address    String?  @db.Text
+  area       String?   @map("area") @db.VarChar(150)
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   deletedAt  DateTime? @map("deleted_at") @db.Timestamp(0)
 
   orders Order[]
 
+  @@index([area])
   @@map("Customers")
 }
-
 model Product {
   productId     Int       @id @default(autoincrement()) @map("product_id")
   productName   String    @unique @map("product_name") @db.VarChar(150)
@@ -133,6 +133,14 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("Activity_Logs")
+}
+
+model DeliveryArea {
+  areaId   Int    @id @default(autoincrement()) @map("area_id")
+  name     String @unique @db.VarChar(150)
+  sequence Int    @default(0) @map("sequence")
+
+  @@map("Delivery_Areas")
 }
 
 enum OrderStatus {

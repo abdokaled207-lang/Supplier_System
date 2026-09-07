@@ -1,6 +1,6 @@
 # Roti Chani System
 
-An order/stock/payment management system for a small roti business. The original business schema lives in `Roti_chani_system_v3.sql` (reference only); the live schema is now maintained as Prisma migrations in `backend/prisma/`.
+An order/stock/payment management system for a small roti business. The original business schema is preserved at `docs/legacy/v3.sql` (reference only); the live schema is maintained as Prisma migrations in `backend/prisma/`.
 
 ## Stack
 
@@ -84,11 +84,24 @@ All routes except `GET /api/health` and `POST /api/auth/login` require `Authoriz
 - `GET /api/health` — public health check with DB status (503 if DB unreachable)
 - `GET/POST/PUT/DELETE /api/customers` — list supports `?page=&pageSize=`
 - `GET/POST/PUT/DELETE /api/products` — list supports `?page=&pageSize=`
-- `GET/POST /api/orders`, `GET /api/orders/:id`, `PATCH /api/orders/:id/status` — list supports `?page=&pageSize=`
+- `GET/POST /api/orders`, `GET /api/orders/:id`, `PATCH /api/orders/:id/status`, **`PUT /api/orders/:id`** (full edit) — list supports `?page=&pageSize=`
 - `POST/GET/DELETE /api/payments`
 - `GET/POST/DELETE /api/stock-receipts` — list supports `?page=&pageSize=`
 - `GET /api/reports/orders-by-status`, `GET /api/reports/customer-balance`, `GET /api/reports/product-stock`
 - `GET /api/reports/customer-balance.csv`, `GET /api/reports/product-stock.csv`, `GET /api/reports/orders-by-status.csv` — RFC 4180 CSV with UTF-8 BOM
+
+### Order edit (`PUT /api/orders/:id`)
+
+Replaces the order's customer, line items, order date, expected delivery date, and notes. Same wire shape as `POST /api/orders` with two extras:
+
+- `expectedDeliveryAt`: ISO 8601 timestamp or `null` (clears the date)
+- `acknowledgeUnderTotal`: `true` to save even when the new total is below what has been paid
+
+Stock rules on edit: only the `delivered` status holds stock, so only edits to a delivered order adjust stock quantities (net delta). Pending / processing / shipped / cancelled orders never touch stock.
+
+If the new total is below the already-paid amount and `acknowledgeUnderTotal` is not set, the server returns `409 PAID_EXCEEDS_TOTAL` with `details: { newTotal, paid }`. The frontend should show a confirmation dialog and resubmit with `acknowledgeUnderTotal: true` if the admin accepts the underflow.
+
+Order wire format includes `expectedDeliveryAt` (nullable) and `statusUpdatedAt` (auto-updated on every status change via `PATCH /api/orders/:id/status`).
 
 Paginated list responses: `{ "data": [...], "total": N, "page": N, "pageSize": N }`
 

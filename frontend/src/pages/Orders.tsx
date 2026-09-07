@@ -47,7 +47,7 @@ export function Orders() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [pendingCancel, setPendingCancel] = useState<{ id: number; currentStatus: OrderStatus } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ id: number; status: OrderStatus } | null>(null);
-
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const orders = useQuery({
     queryKey: ["orders-page", page],
     queryFn: () => api.get<{ data: Order[]; total: number; page: number; pageSize: number }>(`/orders?page=${page}&pageSize=${PAGE_SIZE}`),
@@ -83,7 +83,10 @@ export function Orders() {
     mutationFn: ({ id, status }: { id: number; status: OrderStatus }) => api.patch(`/orders/${id}/status`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["orders-page"] }),
   });
-
+const deleteOrder = useMutation({
+  mutationFn: (id: number) => api.delete(`/orders/${id}`),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ["orders-page"] }),
+});
   const addPayment = useMutation({
     mutationFn: ({ orderId, amount, paymentType }: { orderId: number; amount: number; paymentType: PaymentType }) =>
       api.post("/payments", { orderId, amount, paymentType }),
@@ -402,12 +405,29 @@ export function Orders() {
                   </select>
                 </label>
                 <InputPayment orderId={o.orderId} onSubmit={addPayment.mutate} balance={o.balance} />
-                <Link to={`/orders/${o.orderId}/edit`} className="secondary">
+              
+                <Link to={`/orders/${o.orderId}/edit`} className="secondary edit-action">
+                  Edit
+                </Link>
+               {/* <Link to={`/orders/${o.orderId}/edit`} className="secondary">
+               Edit
+               </Link> */}
+                    <button type="button" className="danger" onClick={() => setPendingDelete(o.orderId)}>
+                    Delete
+                    </button>
+                   <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary invoice-action">
+                   Print Invoice
+                    </a>
+                    
+                    {/* <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary">
+                    Print Invoice
+                    </a> */}
+                {/* <Link to={`/orders/${o.orderId}/edit`} className="secondary">
                   Edit
                 </Link>
                 <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary">
                   Print Invoice
-                </a>
+                </a> */}
               </div>
             </div>
           ))}
@@ -430,7 +450,36 @@ export function Orders() {
         />
       )}
 
-      {pendingStatusChange && (
+       {pendingStatusChange && (
+        <ConfirmDialog
+          title={`Change order status to "${pendingStatusChange.status}"?`}
+          message="This will update the order status."
+          confirmLabel="Change"
+          variant="info"
+          onConfirm={() => {
+            setStatus.mutate({ id: pendingStatusChange.id, status: pendingStatusChange.status });
+            setPendingStatusChange(null);
+          }}
+          onCancel={() => setPendingStatusChange(null)}
+        />
+      )}
+
+      {pendingDelete !== null && (
+        <ConfirmDialog
+          title="Delete this order?"
+          message="This will remove the order from the list. It can be restored later if needed."
+          confirmLabel="Yes, delete order"
+          variant="danger"
+          onConfirm={() => {
+            deleteOrder.mutate(pendingDelete);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+    </section>
+  );
+      {/* {pendingStatusChange && (
         <ConfirmDialog
           title={`Change order status to "${pendingStatusChange.status}"?`}
           message="This will update the order status."
@@ -444,7 +493,7 @@ export function Orders() {
         />
       )}
     </section>
-  );
+  ); */}
 }
 
 function InputPayment({ orderId, onSubmit, balance }: { orderId: number; onSubmit: (p: { orderId: number; amount: number; paymentType: PaymentType }) => void; balance: string }) {

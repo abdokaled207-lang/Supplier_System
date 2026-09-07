@@ -11,7 +11,7 @@ vi.mock("../src/db/prisma", () => ({
 }));
 
 const app = createApp();
-const token = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
 
 const customer = { customerId: 1, fullName: "Ahmad", phone: "0123456789", gpsLink: null, address: null, createdAt: "2026-09-01T00:00:00.000Z" };
 
@@ -74,7 +74,7 @@ describe("customers", () => {
   });
 
   it("fetches a customer by id", async () => {
-    vi.mocked(prisma.customer.findUnique).mockResolvedValue(customer as never);
+    vi.mocked(prisma.customer.findUnique).mockResolvedValue({ ...customer, orders: [] } as never);
 
     const res = await authed("get", "/api/customers/1");
     expect(res.status).toBe(200);
@@ -90,6 +90,7 @@ describe("customers", () => {
   });
 
   it("updates a customer", async () => {
+    vi.mocked(prisma.customer.findUnique).mockResolvedValue(customer as never);
     vi.mocked(prisma.customer.update).mockResolvedValue({ ...customer, fullName: "Ahmad Ali" } as never);
 
     const res = await authed("put", "/api/customers/1").send({ fullName: "Ahmad Ali" });
@@ -97,18 +98,23 @@ describe("customers", () => {
     expect(res.body.data.fullName).toBe("Ahmad Ali");
   });
 
-  it("deletes a customer (204)", async () => {
-    vi.mocked(prisma.customer.delete).mockResolvedValue(customer as never);
+  it("deletes a customer via soft delete (204)", async () => {
+    vi.mocked(prisma.customer.findUnique).mockResolvedValue(customer as never);
+    vi.mocked(prisma.customer.update).mockResolvedValue(customer as never);
 
     const res = await authed("delete", "/api/customers/1");
     expect(res.status).toBe(204);
+    expect(prisma.customer.update).toHaveBeenCalledWith({
+      where: { customerId: 1 },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
-  it("returns 409 when a customer has orders (FK restrict)", async () => {
-    vi.mocked(prisma.customer.delete).mockRejectedValue(new Error("FK violation"));
+  it("returns 404 when deleting a missing customer", async () => {
+    vi.mocked(prisma.customer.findUnique).mockResolvedValue(null);
 
-    const res = await authed("delete", "/api/customers/1");
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe("CONFLICT");
+    const res = await authed("delete", "/api/customers/999");
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
   });
 });

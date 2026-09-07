@@ -190,11 +190,11 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
         </div>
       </div>
 
-      {/* ===== FOOTER ===== */}
+     
       <div className="inv-footer">
-        <img src={settings.logoUrl} alt="" className="inv-footer-logo" aria-hidden="true" />
+        {/* <img src={settings.logoUrl} alt="" className="inv-footer-logo" aria-hidden="true" />
         <span className="inv-footer-url">www.quotationmaker.app</span>
-        <span className="inv-footer-page">Page 1 of 1</span>
+        <span className="inv-footer-page">Page 1 of 1</span> */}
       </div>
     </div>
   );

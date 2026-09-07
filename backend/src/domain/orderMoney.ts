@@ -47,6 +47,42 @@ export function paymentStatusFor(totalCents: number, paidCents: number): Payment
   return "UNPAID";
 }
 
+// Throw if a proposed new total is below the already-paid amount. Used on edit
+// to surface the conflict through the shared error envelope instead of leaking
+// float math into routes. If `acknowledgeUnderTotal` is true, the caller has
+// accepted the underflow (admin override).
+export function assertTotalCoversPaid(
+  newItemLines: { quantity: number; unitPrice: Money }[],
+  paidSoFar: Money[],
+  acknowledgeUnderTotal: boolean,
+): { newTotal: string; paid: string } {
+  let newTotalCents = 0;
+  for (const it of newItemLines) {
+    newTotalCents += it.quantity * toCents(it.unitPrice);
+  }
+  let paidCents = 0;
+  for (const amount of paidSoFar) {
+    paidCents += toCents(amount);
+  }
+  if (newTotalCents < paidCents && !acknowledgeUnderTotal) {
+    throw new UnderTotalError(newTotalCents, paidCents);
+  }
+  return { newTotal: fromCents(newTotalCents), paid: fromCents(paidCents) };
+}
+
+export class UnderTotalError extends Error {
+  public readonly newTotal: string;
+  public readonly paid: string;
+  constructor(newTotalCents: number, paidCents: number) {
+    super(
+      `New total (RM ${fromCents(newTotalCents)}) is below the already-paid amount (RM ${fromCents(paidCents)}). Confirm to proceed.`,
+    );
+    this.name = "UnderTotalError";
+    this.newTotal = fromCents(newTotalCents);
+    this.paid = fromCents(paidCents);
+  }
+}
+
 // Serialize an order row (Plus its items/payments) into the API view: adds each
 // item's `subtotal` and the order-level `total` / `paid` / `balance`.
 export function decorateOrder<Base extends { items: OrderItemView[]; payments?: PaymentView[] }>(order: Base) {

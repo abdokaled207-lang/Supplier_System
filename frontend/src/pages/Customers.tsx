@@ -207,7 +207,7 @@ export function Customers() {
                   <td>
                     {c.gpsLink ? (
                       <a href={c.gpsLink} target="_blank" rel="noopener noreferrer" aria-label={`Open GPS location for ${c.fullName}`}>
-                        📍
+                        📌
                       </a>
                     ) : null}
                   </td>

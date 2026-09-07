@@ -7,12 +7,12 @@ import { prisma } from "../src/db/prisma";
 vi.mock("../src/db/prisma", () => ({
   prisma: {
     order: { findUnique: vi.fn() },
-    payment: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), delete: vi.fn(), aggregate: vi.fn() },
+    payment: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), aggregate: vi.fn() },
   },
 }));
 
 const app = createApp();
-const token = signToken({ id: 1, email: "admin@roti.local", role: "admin" });
+const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
 
 const order = {
   orderId: 1,
@@ -87,15 +87,19 @@ describe("payments", () => {
     const res = await authed("get", "/api/payments?orderId=1");
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([payment]);
-    expect(prisma.payment.findMany).toHaveBeenCalledWith({ where: { orderId: 1 }, orderBy: { paymentId: "asc" } });
+    expect(prisma.payment.findMany).toHaveBeenCalledWith({ where: { orderId: 1, deletedAt: null }, orderBy: { paymentId: "asc" } });
   });
 
-  it("deletes a payment (204); missing -> 404", async () => {
+  it("deletes a payment via soft delete (204); missing -> 404", async () => {
     vi.mocked(prisma.payment.findUnique).mockResolvedValue(payment as never);
-    vi.mocked(prisma.payment.delete).mockResolvedValue(payment as never);
+    vi.mocked(prisma.payment.update).mockResolvedValue(payment as never);
 
     const ok = await authed("delete", "/api/payments/7");
     expect(ok.status).toBe(204);
+    expect(prisma.payment.update).toHaveBeenCalledWith({
+      where: { paymentId: 7 },
+      data: { deletedAt: expect.any(Date) },
+    });
 
     vi.mocked(prisma.payment.findUnique).mockResolvedValue(null);
     const missing = await authed("delete", "/api/payments/999");
