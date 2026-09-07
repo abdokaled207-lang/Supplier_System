@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { formatMoney } from "../utils/money";
+import { fieldClass } from "../utils/forms";
 import type { Product } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditProductModal } from "../components/EditProductModal";
@@ -112,6 +113,7 @@ export function Products() {
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
             required
+            className={fieldClass(productName, { required: true })}
           />
         </label>
           <label className="field">
@@ -127,6 +129,7 @@ export function Products() {
               min="0"
               inputMode="decimal"
               required
+              className={fieldClass(unitPrice, { required: true })}
             />
           </label>
           <label className="field">
@@ -137,6 +140,7 @@ export function Products() {
               autoComplete="off"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
+              className={fieldClass(imageUrl)}
             />
           </label>
         <button type="submit" disabled={create.isPending}>

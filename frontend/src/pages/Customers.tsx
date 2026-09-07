@@ -12,6 +12,8 @@ import { Pagination } from "../components/Pagination";
 import { SearchInput } from "../components/SearchInput";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { waMeLink } from "../utils/phone";
+import { useDeliveryAreas } from "../api/hooks";
+import { fieldClass } from "../utils/forms";
 
 const PAGE_SIZE = 100;
 
@@ -23,9 +25,11 @@ export function Customers() {
     queryKey: ["customers", page],
     queryFn: () => api.get<{ data: Customer[]; total: number; page: number; pageSize: number }>(`/customers?page=${page}&pageSize=${PAGE_SIZE}`),
   });
+  const areas = useDeliveryAreas();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [gpsLink, setGpsLink] = useState("");
+  const [area, setArea] = useState("");
   const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -33,20 +37,22 @@ export function Customers() {
   const [editPhone, setEditPhone] = useState("");
   const [editGpsLink, setEditGpsLink] = useState("");
   const [editAddress, setEditAddress] = useState("");
+  const [editArea, setEditArea] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
   const create = useMutation({
-    mutationFn: (body: { fullName: string; phone: string; gpsLink?: string; address?: string }) =>
+    mutationFn: (body: { fullName: string; phone: string; gpsLink?: string; address?: string; area?: string | null }) =>
       api.post("/customers", body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["customers"] });
       setFullName("");
       setPhone("");
       setGpsLink("");
+      setArea("");
     },
   });
   const update = useMutation({
-    mutationFn: ({ id, body }: { id: number; body: { fullName: string; phone: string; gpsLink?: string; address?: string } }) =>
+    mutationFn: ({ id, body }: { id: number; body: { fullName: string; phone: string; gpsLink?: string; address?: string; area?: string | null } }) =>
       api.put(`/customers/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["customers"] });
@@ -81,6 +87,7 @@ export function Customers() {
     setEditPhone(c.phone);
     setEditGpsLink(c.gpsLink ?? "");
     setEditAddress(c.address ?? "");
+    setEditArea(c.area ?? "");
   }
 
   function cancelEdit() {
@@ -97,6 +104,7 @@ export function Customers() {
         phone: editPhone,
         ...(editGpsLink.trim() ? { gpsLink: editGpsLink.trim() } : {}),
         ...(editAddress.trim() ? { address: editAddress.trim() } : {}),
+        area: editArea || null,
       },
     });
   }
@@ -112,12 +120,12 @@ export function Customers() {
           if (!fullName.trim()) return;
           if (!phone.trim()) { setPhoneError("Phone number is required"); return; }
           if (!/^\d[\d\s-]{6,}$/.test(phone.trim())) { setPhoneError("Enter a valid phone number"); return; }
-          create.mutate({ fullName: fullName.trim(), phone: phone.trim(), ...(gpsLink.trim() ? { gpsLink: gpsLink.trim() } : {}) });
+          create.mutate({ fullName: fullName.trim(), phone: phone.trim(), ...(gpsLink.trim() ? { gpsLink: gpsLink.trim() } : {}), area: area || null });
         }}
       >
         <label className="field">
           <span className="visually-hidden">Full name</span>
-          <input name="fullName" placeholder="Full name" autoComplete="off" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          <input name="fullName" placeholder="Full name" autoComplete="off" value={fullName} onChange={(e) => setFullName(e.target.value)} required className={fieldClass(fullName, { required: true })} />
         </label>
           <label className="field">
           <span className="visually-hidden">Phone</span>
@@ -142,12 +150,22 @@ export function Customers() {
               else setPhoneError("");
             }}
             required
+            className={`${fieldClass(phone, { required: true })}${phoneError ? " field-invalid" : ""}`}
           />
           {phoneError && <span className="field-error">{phoneError}</span>}
         </label>
         <label className="field">
           <span className="visually-hidden">GPS Location (Google Maps link)</span>
           <input name="gpsLink" placeholder="GPS (optional)" type="url" autoComplete="off" value={gpsLink} onChange={(e) => setGpsLink(e.target.value)} />
+        </label>
+        <label className="field">
+          <span className="visually-hidden">Region</span>
+          <select name="area" aria-label="Region" value={area} onChange={(e) => setArea(e.target.value)} className={fieldClass(area)}>
+            <option value="">Region (optional)</option>
+            {(areas.data?.data ?? []).map((a) => (
+              <option key={a.areaId} value={a.name}>{a.name}</option>
+            ))}
+          </select>
         </label>
         <button type="submit" disabled={create.isPending}>
           {create.isPending ? "Adding…" : "Add"}
@@ -180,6 +198,7 @@ export function Customers() {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Phone</th>
+                <th>Region</th>
                 <th>
                   <span className="visually-hidden">Location</span>
                 </th>
@@ -204,6 +223,7 @@ export function Customers() {
                       c.phone
                     )}
                   </td>
+                  <td>{c.area ?? "—"}</td>
                   <td>
                     {c.gpsLink ? (
                       <a href={c.gpsLink} target="_blank" rel="noopener noreferrer" aria-label={`Open GPS location for ${c.fullName}`}>
@@ -248,6 +268,7 @@ export function Customers() {
                     value={editFullName}
                     onChange={(e) => setEditFullName(e.target.value)}
                     required
+                    className={fieldClass(editFullName, { required: true })}
                   />
                 </label>
                 <label className="field">
@@ -259,6 +280,7 @@ export function Customers() {
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
                     required
+                    className={fieldClass(editPhone, { required: true })}
                   />
                 </label>
                 <label className="field">
@@ -279,7 +301,22 @@ export function Customers() {
                     autoComplete="off"
                     value={editAddress}
                     onChange={(e) => setEditAddress(e.target.value)}
+                    className={fieldClass(editAddress)}
                   />
+                </label>
+                <label className="field">
+                  <span>Region</span>
+                  <select
+                    name="editArea"
+                    value={editArea}
+                    onChange={(e) => setEditArea(e.target.value)}
+                    className={fieldClass(editArea)}
+                  >
+                    <option value="">— None —</option>
+                    {(areas.data?.data ?? []).map((a) => (
+                      <option key={a.areaId} value={a.name}>{a.name}</option>
+                    ))}
+                  </select>
                 </label>
               </div>
               {update.isError && <InlineError message="Could not update customer. Check the phone number is unique." />}

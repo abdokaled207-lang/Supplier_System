@@ -4,7 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, setToken } from "../api/client";
 import type { UserRole } from "../api/types";
 import { getAllSettings, type SystemSettings } from "../utils/settings";
+import { useAuth } from "../auth/auth";
+import { DeliveryAreasPanel } from "../components/DeliveryAreasPanel";
 import { InlineError } from "../components/InlineError";
+import { UsersPanel } from "../components/UsersPanel";
+import { fieldClass } from "../utils/forms";
 
 const KEYS: (keyof SystemSettings)[] = [
   "companyName",
@@ -27,6 +31,7 @@ function loadSettings(): SystemSettings {
 export function Settings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const [form, setForm] = useState<SystemSettings>(loadSettings);
   const [saved, setSaved] = useState(false);
@@ -106,6 +111,9 @@ export function Settings() {
     <section>
       <h2 className="page-title">Settings</h2>
 
+      {isAdmin && <UsersPanel />}
+      {isAdmin && <DeliveryAreasPanel />}
+
       <form onSubmit={handleAccountSubmit}>
         <div className="panel" style={{ marginBottom: "var(--space-4)" }}>
           <h3>Account</h3>
@@ -118,6 +126,7 @@ export function Settings() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                className={fieldClass(email, { required: true })}
               />
             </label>
             <label className="field">
@@ -128,6 +137,7 @@ export function Settings() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 autoComplete="current-password"
                 required
+                className={fieldClass(currentPassword, { required: true })}
               />
             </label>
             <label className="field">
@@ -138,6 +148,7 @@ export function Settings() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
                 placeholder="Min. 8 characters"
+                className={fieldClass(newPassword)}
               />
             </label>
             <label className="field">
@@ -147,6 +158,7 @@ export function Settings() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
+                className={fieldClass(confirmPassword)}
               />
             </label>
           </div>

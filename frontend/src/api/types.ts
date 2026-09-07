@@ -9,6 +9,20 @@ export interface Customer {
   phone: string;
   gpsLink?: string | null;
   address?: string | null;
+  area?: string | null;
+}
+
+export interface SystemUser {
+  id: number;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface DeliveryArea {
+  areaId: number;
+  name: string;
+  sequence: number;
 }
 
 export interface CustomerProfile extends Customer {

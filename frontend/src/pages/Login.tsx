@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/auth";
 import { COMPANY_NAME } from "../utils/constants";
+import { fieldClass } from "../utils/forms";
 
 export function Login() {
   const { login } = useAuth();
@@ -37,11 +38,11 @@ export function Login() {
         )}
         <label className="field">
           Email
-          <input name="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" spellCheck={false} required />
+          <input name="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" spellCheck={false} required className={fieldClass(email, { required: true })} />
         </label>
         <label className="field">
           Password
-          <input name="password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" required />
+          <input name="password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" required className={fieldClass(password, { required: true })} />
         </label>
         {error && (
           <p className="error-text" role="alert">

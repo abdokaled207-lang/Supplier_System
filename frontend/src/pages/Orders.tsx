@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { useCustomers, useProducts } from "../api/hooks";
+import { fieldClass } from "../utils/forms";
 import type { Order, OrderStatus, PaymentType } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
@@ -199,7 +200,7 @@ const deleteOrder = useMutation({
         <div className="inline-form">
           <label className="field">
             <span className="visually-hidden">Customer</span>
-            <select name="customerId" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+            <select name="customerId" value={customerId} onChange={(e) => setCustomerId(e.target.value)} className={fieldClass(customerId, { required: true })}>
               <option value="">Select customer</option>
               {customers.data?.data.map((c) => (
                 <option key={c.customerId} value={c.customerId}>
@@ -218,7 +219,7 @@ const deleteOrder = useMutation({
           </button>
           <label className="field">
             <span className="visually-hidden">Product</span>
-            <select name="productId" value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <select name="productId" value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldClass(productId, { required: true })}>
               <option value="">Select product</option>
               {products.data?.data.map((p) => (
                 <option key={p.productId} value={p.productId}>
@@ -229,7 +230,7 @@ const deleteOrder = useMutation({
           </label>
           <label className="field">
             <span className="visually-hidden">Quantity</span>
-            <input name="quantity" type="number" min="1" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" required />
+            <input name="quantity" type="number" min="1" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" required className={fieldClass(quantity, { required: true })} />
           </label>
           <button className="secondary" onClick={addItem} disabled={!productId || !quantity || Number(quantity) <= 0}>
             Add item

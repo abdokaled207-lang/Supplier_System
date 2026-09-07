@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { fieldClass } from "../utils/forms";
 import type { Product } from "../api/types";
 
 interface Props {
@@ -54,7 +55,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
         <form id="edit-product-form" onSubmit={handleSubmit}>
           <label className="field">
             <span>Product name</span>
-            <input autoFocus name="productName" value={name} onChange={(e) => setName(e.target.value)} required />
+            <input autoFocus name="productName" value={name} onChange={(e) => setName(e.target.value)} required className={errors.name ? "field-invalid" : fieldClass(name, { required: true })} />
             {errors.name && <span className="field-error">{errors.name}</span>}
           </label>
           <label className="field">
@@ -68,6 +69,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               required
+              className={errors.price ? "field-invalid" : fieldClass(price, { required: true })}
             />
             {errors.price && <span className="field-error">{errors.price}</span>}
           </label>
