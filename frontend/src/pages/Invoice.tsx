@@ -1,5 +1,8 @@
+import { useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { Mail, Phone } from "lucide-react";
 import { api } from "../api/client";
 import type { CustomerProfile, Order } from "../api/types";
@@ -13,6 +16,9 @@ import { waMeLink } from "../utils/phone";
 
 export function Invoice() {
   const { id } = useParams<{ id: string }>();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const orderQuery = useQuery({
     queryKey: ["order-invoice", id],
@@ -29,8 +35,8 @@ export function Invoice() {
   const order = orderQuery.data?.data;
   const settings = getAllSettings();
   const customerPhone = order?.customer?.phone ?? customerQuery.data?.data?.phone ?? "";
-  const sendLink = order && customerPhone
-    ? waMeLink(customerPhone, [
+  const messageText = order
+    ? [
         `*INVOICE ${invoiceNumber(order.orderId)}*`,
         settings.companyName || "ROTI CHANI KING",
         `Date: ${formatShortDate(order.orderDate)}`,
@@ -38,17 +44,73 @@ export function Invoice() {
         `Sub Total: ${formatMoney(order.total)}`,
         `Baki Tertunggak: ${formatMoney(customerQuery.data?.data?.outstandingBalance ?? order.balance)}`,
         "Thank you for your support!",
-      ].join("\n"))
-    : null;
+      ].join("\n")
+    : "";
+  const sendLink = order && customerPhone ? waMeLink(customerPhone, messageText) : null;
+  const pdfFilename = order ? `${invoiceNumber(order.orderId)}.pdf` : "invoice.pdf";
+
+  // Render the visible invoice sheet to a single-page A4 PDF.
+  async function generatePdf(): Promise<Blob> {
+    const el = sheetRef.current;
+    if (!el) throw new Error("Invoice not ready");
+    const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 5;
+    let imgW = pageW - margin * 2;
+    let imgH = (canvas.height / canvas.width) * imgW;
+    if (imgH > pageH - margin * 2) {
+      imgH = pageH - margin * 2;
+      imgW = (canvas.width / canvas.height) * imgH;
+    }
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pageW - imgW) / 2, margin, imgW, imgH);
+    return pdf.output("blob");
+  }
+
+  async function sendToCustomer() {
+    if (!order || !sendLink) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const pdf = await generatePdf();
+      const file = new File([pdf], pdfFilename, { type: "application/pdf" });
+
+      // Native share sheet (Windows/Android/iOS): pick WhatsApp and it goes
+      // straight to the current chat with the PDF attached.
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: pdfFilename, text: messageText });
+        return;
+      }
+
+      // Fallback: download the PDF and open the customer's WhatsApp chat —
+      // attach the downloaded file to the opened chat.
+      const url = URL.createObjectURL(pdf);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFilename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      window.open(sendLink, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") {
+        setSendError("Could not generate the PDF. Try again, or use Ctrl+P to print.");
+      }
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="invoice-page">
       <div className="invoice-toolbar">
         <a href="/orders" className="secondary">← Back to Orders</a>
         {sendLink ? (
-          <a className="inv-send-btn" href={sendLink} target="_blank" rel="noopener noreferrer">
-            <WhatsAppIcon size={16} /> Send to Customer
-          </a>
+          <button className="inv-send-btn" onClick={sendToCustomer} disabled={sending}>
+            <WhatsAppIcon size={16} /> {sending ? "Preparing PDF…" : "Send to Customer"}
+          </button>
         ) : (
           <button className="inv-send-btn inv-send-btn--disabled" disabled title="This customer has no phone number on file">
             <WhatsAppIcon size={16} /> Send to Customer
@@ -56,14 +118,17 @@ export function Invoice() {
         )}
       </div>
 
+      {sendError && <InlineError message={sendError} />}
       {orderQuery.isLoading && <LoadingSkeleton rows={8} columns={4} />}
       {orderQuery.isError && <InlineError message={(orderQuery.error as Error)?.message ?? "Failed to load invoice"} />}
 
       {order && (
-        <InvoiceSheet
-          order={order}
-          outstandingBalance={customerQuery.data?.data?.outstandingBalance}
-        />
+        <div ref={sheetRef}>
+          <InvoiceSheet
+            order={order}
+            outstandingBalance={customerQuery.data?.data?.outstandingBalance}
+          />
+        </div>
       )}
     </div>
   );

@@ -1041,6 +1041,13 @@ tbody tr:hover {
   font-size: 14px;
 }
 
+/* The app's data tables carry a card shadow (element-level `table` rule);
+   the invoice sheet must render clean, flat paper. */
+.inv-sheet,
+.inv-sheet * {
+  box-shadow: none !important;
+}
+
 /* ===== HEADER (clear-invoice layout: logo | centered company | title) ===== */
 .inv-header-row {
   background: #fff;
