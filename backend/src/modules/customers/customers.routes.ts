@@ -1,15 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
-import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
 import { requireAdmin } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
-import { decorateOrder } from "../../domain/orderMoney";
-import { toCents, fromCents } from "../../utils/money";
-import { OrderStatus } from "@prisma/client";
-import { logActivity } from "../../utils/activityLog";
+import {
+  createCustomer,
+  getCustomerProfile,
+  listCustomers,
+  restoreCustomer,
+  softDeleteCustomer,
+  updateCustomer,
+} from "./customers.service";
 
 const router = Router();
 
@@ -34,17 +36,9 @@ const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { skip, take, page, pageSize } = parsePagination(req.query);
-    const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
-        where: { deletedAt: null },
-        orderBy: { customerId: "asc" },
-        skip,
-        take,
-      }),
-      prisma.customer.count({ where: { deletedAt: null } }),
-    ]);
-    res.json(paginated(customers, total, page, pageSize));
+    const page = parsePagination(req.query);
+    const { customers, total } = await listCustomers(page);
+    res.json(paginated(customers, total, page.page, page.pageSize));
   }),
 );
 
@@ -53,30 +47,8 @@ router.get(
   "/:id",
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const customer = await prisma.customer.findUnique({
-      where: { customerId: Number(req.params.id), deletedAt: null },
-      include: {
-        orders: {
-          where: { deletedAt: null },
-          include: { items: { include: { product: true } }, payments: true },
-          orderBy: { orderDate: "desc" },
-        },
-      },
-    });
-    if (!customer) throw errors.notFound("Customer not found");
-
-    const decoratedOrders = customer.orders.map(decorateOrder);
-    const outstandingCents = decoratedOrders
-      .filter((o) => o.status !== OrderStatus.CANCELLED)
-      .reduce((sum, o) => sum + toCents(o.balance), 0);
-
-    res.json({
-      data: {
-        ...customer,
-        orders: decoratedOrders,
-        outstandingBalance: fromCents(outstandingCents),
-      },
-    });
+    const customer = await getCustomerProfile(Number(req.params.id));
+    res.json({ data: customer });
   }),
 );
 
@@ -85,8 +57,7 @@ router.post(
   "/",
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const customer = await prisma.customer.create({ data: req.body });
-    await logActivity({ entityType: "customer", entityId: customer.customerId, action: "created", description: `Customer "${customer.fullName}" created` });
+    const customer = await createCustomer(req.body as z.infer<typeof createSchema>);
     res.status(201).json({ data: customer });
   }),
 );
@@ -98,14 +69,7 @@ router.put(
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.customer.findUnique({ where: { customerId: Number(req.params.id), deletedAt: null } });
-    if (!existing) throw errors.notFound("Customer not found");
-
-    const customer = await prisma.customer.update({
-      where: { customerId: Number(req.params.id) },
-      data: req.body,
-    });
-    await logActivity({ entityType: "customer", entityId: customer.customerId, action: "updated", description: `Customer "${customer.fullName}" updated`, metadata: req.body });
+    const customer = await updateCustomer(Number(req.params.id), req.body as z.infer<typeof updateSchema>);
     res.json({ data: customer });
   }),
 );
@@ -116,14 +80,7 @@ router.delete(
   requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.customer.findUnique({ where: { customerId: Number(req.params.id), deletedAt: null } });
-    if (!existing) throw errors.notFound("Customer not found");
-
-    await prisma.customer.update({
-      where: { customerId: Number(req.params.id) },
-      data: { deletedAt: new Date() },
-    });
-    await logActivity({ entityType: "customer", entityId: existing.customerId, action: "deleted", description: `Customer "${existing.fullName}" deleted` });
+    await softDeleteCustomer(Number(req.params.id));
     res.status(204).send();
   }),
 );
@@ -134,14 +91,7 @@ router.post(
   requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.customer.findUnique({ where: { customerId: Number(req.params.id), deletedAt: { not: null } } });
-    if (!existing) throw errors.notFound("Customer not found or not deleted");
-
-    const customer = await prisma.customer.update({
-      where: { customerId: Number(req.params.id) },
-      data: { deletedAt: null },
-    });
-    await logActivity({ entityType: "customer", entityId: customer.customerId, action: "restored", description: `Customer "${customer.fullName}" restored` });
+    const customer = await restoreCustomer(Number(req.params.id));
     res.json({ data: customer });
   }),
 );
