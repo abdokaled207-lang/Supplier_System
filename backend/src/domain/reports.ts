@@ -4,6 +4,17 @@ export interface ReportsAdapter {
   productStock(): Promise<{ productId: number; productName: string; unitPrice: string; stockQuantity: number }[]>;
   bestSellers(range?: DateRange): Promise<{ productId: number; productName: string; imageUrl: string; quantitySold: number }[]>;
   todaySales(): Promise<{ total: string; count: number }>;
+  dashboard(lowStockThreshold: number): Promise<DashboardStats>;
+}
+
+export interface DashboardStats {
+  totalOrders: number;
+  statusCounts: Record<string, number>;
+  openOrders: number;
+  revenue: string;
+  outstanding: string;
+  todaySales: { total: string; count: number };
+  lowStock: { productId: number; productName: string; imageUrl: string; stockQuantity: number }[];
 }
 
 export interface DateRange {

@@ -52,6 +52,13 @@ router.get("/best-sellers", asyncHandler(async (req, res) => {
   res.json({ data: await getAdapter().bestSellers(range) });
 }));
 
+// GET /api/reports/dashboard — aggregate stats for the dashboard (server-side)
+router.get("/dashboard", asyncHandler(async (req, res) => {
+  const threshold = Number(req.query.lowStockThreshold);
+  const lowStockThreshold = Number.isFinite(threshold) && threshold >= 0 ? threshold : 0;
+  res.json({ data: await getAdapter().dashboard(lowStockThreshold) });
+}));
+
 // GET /api/reports/today-sales
 router.get("/today-sales", asyncHandler(async (_req, res) => {
   res.json({ data: await getAdapter().todaySales() });
