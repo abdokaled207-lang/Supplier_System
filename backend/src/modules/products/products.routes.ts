@@ -1,13 +1,18 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
-import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
 import { requireAdmin } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
-import { logActivity } from "../../utils/activityLog";
-import { fromCents, toCents } from "../../utils/money";
+import {
+  createProduct,
+  getProduct,
+  getProductWithRecentOrders,
+  listProducts,
+  restoreProduct,
+  softDeleteProduct,
+  updateProduct,
+} from "./products.service";
 
 const router = Router();
 
@@ -30,18 +35,9 @@ const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { skip, take, page, pageSize } = parsePagination(req.query);
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where: { deletedAt: null },
-        orderBy: { productId: "asc" },
-        skip,
-        take,
-        select: { productId: true, productName: true, unitPrice: true, stockQuantity: true, imageUrl: true, createdAt: true, deletedAt: true },
-      }),
-      prisma.product.count({ where: { deletedAt: null } }),
-    ]);
-    res.json(paginated(products, total, page, pageSize));
+    const page = parsePagination(req.query);
+    const { products, total } = await listProducts(page);
+    res.json(paginated(products, total, page.page, page.pageSize));
   }),
 );
 
@@ -50,29 +46,8 @@ router.get(
   "/:id/orders",
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const product = await prisma.product.findUnique({
-      where: { productId: Number(req.params.id), deletedAt: null },
-      select: { productId: true, productName: true, unitPrice: true, stockQuantity: true, imageUrl: true },
-    });
-    if (!product) throw errors.notFound("Product not found");
-
-    const ordersWithProduct = await prisma.orderItem.findMany({
-      where: { productId: Number(req.params.id), order: { deletedAt: null } },
-      include: { order: { include: { customer: true } } },
-      orderBy: { order: { orderDate: "desc" } },
-      take: 20,
-    });
-
-    const orders = ordersWithProduct.map((oi) => ({
-      orderId: oi.order.orderId,
-      orderDate: oi.order.orderDate,
-      status: oi.order.status,
-      customerName: oi.order.customer?.fullName ?? "—",
-      quantity: oi.quantity,
-      subtotal: fromCents(toCents(oi.unitPrice) * oi.quantity),
-    }));
-
-    res.json({ data: { product, orders } });
+    const data = await getProductWithRecentOrders(Number(req.params.id));
+    res.json({ data });
   }),
 );
 
@@ -81,11 +56,7 @@ router.get(
   "/:id",
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const product = await prisma.product.findUnique({
-      where: { productId: Number(req.params.id), deletedAt: null },
-      select: { productId: true, productName: true, unitPrice: true, stockQuantity: true, imageUrl: true },
-    });
-    if (!product) throw errors.notFound("Product not found");
+    const product = await getProduct(Number(req.params.id));
     res.json({ data: product });
   }),
 );
@@ -93,11 +64,10 @@ router.get(
 // POST /api/products
 router.post(
   "/",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(createSchema),
   asyncHandler(async (req, res) => {
-    const product = await prisma.product.create({ data: req.body });
-    await logActivity({ entityType: "product", entityId: product.productId, action: "created", description: `Product "${product.productName}" created` });
+    const product = await createProduct(req.body as z.infer<typeof createSchema>);
     res.status(201).json({ data: product });
   }),
 );
@@ -105,45 +75,11 @@ router.post(
 // PUT /api/products/:id
 router.put(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   validate(updateSchema),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.product.findUnique({
-      where: { productId: Number(req.params.id), deletedAt: null },
-      select: { productId: true, productName: true, unitPrice: true, imageUrl: true },
-    });
-    if (!existing) throw errors.notFound("Product not found");
-
-    const updateData: { productName?: string; unitPrice?: number; imageUrl?: string } = {};
-    if (req.body.productName !== undefined) updateData.productName = req.body.productName;
-    if (req.body.unitPrice !== undefined) updateData.unitPrice = req.body.unitPrice;
-    if (req.body.imageUrl !== undefined) updateData.imageUrl = req.body.imageUrl;
-
-    const product = await prisma.product.update({
-      where: { productId: Number(req.params.id) },
-      data: updateData,
-    });
-
-    const changes: string[] = [];
-    if (req.body.productName && req.body.productName !== existing.productName) {
-      changes.push(`name: "${existing.productName}" → "${req.body.productName}"`);
-    }
-    if (req.body.unitPrice !== undefined && Number(req.body.unitPrice) !== Number(existing.unitPrice)) {
-      changes.push(`price: RM${existing.unitPrice} → RM${req.body.unitPrice}`);
-    }
-    if (req.body.imageUrl !== undefined && req.body.imageUrl !== existing.imageUrl) {
-      changes.push(`image updated`);
-    }
-
-    await logActivity({
-      entityType: "product",
-      entityId: product.productId,
-      action: "updated",
-      description: `Product "${product.productName}" updated${changes.length ? `: ${changes.join(", ")}` : ""}`,
-      metadata: req.body,
-    });
-
+    const product = await updateProduct(Number(req.params.id), req.body as z.infer<typeof updateSchema>);
     res.json({ data: product });
   }),
 );
@@ -151,20 +87,10 @@ router.put(
 // DELETE /api/products/:id — soft delete
 router.delete(
   "/:id",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.product.findUnique({
-      where: { productId: Number(req.params.id), deletedAt: null },
-      select: { productId: true, productName: true },
-    });
-    if (!existing) throw errors.notFound("Product not found");
-
-    await prisma.product.update({
-      where: { productId: Number(req.params.id) },
-      data: { deletedAt: new Date() },
-    });
-    await logActivity({ entityType: "product", entityId: existing.productId, action: "deleted", description: `Product "${existing.productName}" deleted` });
+    await softDeleteProduct(Number(req.params.id));
     res.status(204).send();
   }),
 );
@@ -172,20 +98,10 @@ router.delete(
 // POST /api/products/:id/restore — restore soft-deleted product
 router.post(
   "/:id/restore",
-  requireRole("ADMIN"),
+  requireAdmin,
   validate(paramsSchema, "params"),
   asyncHandler(async (req, res) => {
-    const existing = await prisma.product.findUnique({
-      where: { productId: Number(req.params.id), deletedAt: { not: null } },
-      select: { productId: true, productName: true },
-    });
-    if (!existing) throw errors.notFound("Product not found or not deleted");
-
-    const product = await prisma.product.update({
-      where: { productId: Number(req.params.id) },
-      data: { deletedAt: null },
-    });
-    await logActivity({ entityType: "product", entityId: product.productId, action: "restored", description: `Product "${product.productName}" restored` });
+    const product = await restoreProduct(Number(req.params.id));
     res.json({ data: product });
   }),
 );
