@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { asyncHandler } from "../../utils/async";
 import { validate } from "../../middleware/validate";
-import { requireRole } from "../../middleware/auth";
+import { requireAdmin } from "../../middleware/auth";
 import { WIRE_PAYMENT_TYPES } from "../../domain/enums";
 import { createPayment, listPayments, restorePayment, softDeletePayment } from "./payments.service";
 

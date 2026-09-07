@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
-import { buildReportsAdapter, parseRangeParams } from "../../domain/reports";
+import { parseRangeParams } from "../../domain/reports";
+import { buildReportsAdapter } from "../../db/reportsAdapter";
 import { csvResponse, toCsv } from "../../utils/csv";
 
 const router = Router();

@@ -4,7 +4,7 @@ import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
 import { errors } from "../../utils/http";
 import { validate } from "../../middleware/validate";
-import { requireRole } from "../../middleware/auth";
+import { requireAdmin } from "../../middleware/auth";
 import { parsePagination, paginated } from "../../utils/pagination";
 import { logActivity } from "../../utils/activityLog";
 import { fromCents, toCents } from "../../utils/money";
