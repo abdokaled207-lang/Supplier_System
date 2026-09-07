@@ -19,6 +19,7 @@ export function Invoice() {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [sendHint, setSendHint] = useState<string | null>(null);
 
   const orderQuery = useQuery({
     queryKey: ["order-invoice", id],
@@ -72,19 +73,38 @@ export function Invoice() {
     if (!order || !sendLink) return;
     setSending(true);
     setSendError(null);
+    setSendHint(null);
+
+    // Open the customer's WhatsApp chat synchronously — browsers block
+    // window.open after the async PDF render, so this must happen first.
+    const chatWindow = window.open(sendLink, "_blank", "noopener,noreferrer");
+
     try {
       const pdf = await generatePdf();
       const file = new File([pdf], pdfFilename, { type: "application/pdf" });
 
-      // Native share sheet (Windows/Android/iOS): pick WhatsApp and it goes
-      // straight to the current chat with the PDF attached.
+      // Native share sheet (Windows/Android/iOS): pick WhatsApp and the PDF
+      // goes straight into the current chat. Close the pre-opened tab.
       if (navigator.canShare?.({ files: [file] })) {
+        chatWindow?.close();
         await navigator.share({ files: [file], title: pdfFilename, text: messageText });
         return;
       }
 
-      // Fallback: download the PDF and open the customer's WhatsApp chat —
-      // attach the downloaded file to the opened chat.
+      // Fallback: put the PDF on the clipboard (Ctrl+V pastes it as a file)
+      // and download it as a backup.
+      let copied = false;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "application/pdf": pdf })]);
+        copied = true;
+      } catch {
+        try {
+          await navigator.clipboard.writeText(messageText);
+        } catch {
+          // clipboard unavailable — the downloaded file still works
+        }
+      }
+
       const url = URL.createObjectURL(pdf);
       const a = document.createElement("a");
       a.href = url;
@@ -93,8 +113,12 @@ export function Invoice() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      window.open(sendLink, "_blank", "noopener,noreferrer");
+
+      setSendHint(
+        `${pdfFilename} downloaded. Paste it into the customer's WhatsApp chat that just opened (${copied ? "Ctrl+V" : "attach 📎"}), then send.`,
+      );
     } catch (e) {
+      chatWindow?.close();
       if ((e as Error)?.name !== "AbortError") {
         setSendError("Could not generate the PDF. Try again, or use Ctrl+P to print.");
       }
@@ -119,6 +143,7 @@ export function Invoice() {
       </div>
 
       {sendError && <InlineError message={sendError} />}
+      {sendHint && <p className="inv-send-hint">{sendHint}</p>}
       {orderQuery.isLoading && <LoadingSkeleton rows={8} columns={4} />}
       {orderQuery.isError && <InlineError message={(orderQuery.error as Error)?.message ?? "Failed to load invoice"} />}
 
