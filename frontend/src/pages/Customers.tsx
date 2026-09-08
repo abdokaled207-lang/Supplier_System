@@ -212,7 +212,7 @@ export function Customers() {
                 <tr key={c.customerId}>
                   <td>{c.customerId}</td>
                   <td>
-                    <Link to={`/customers/${c.customerId}`}>{c.fullName}</Link>
+                    <Link to={`/customers/${c.customerId}`} className="customer-name-link">{c.fullName}</Link>
                   </td>
                   <td>
                     {waMeLink(c.phone) ? (
@@ -234,7 +234,7 @@ export function Customers() {
                   <td>
                     <div className="row-actions">
                       {isAdmin && (
-                        <button className="secondary" onClick={() => startEdit(c)}>
+                        <button className="edit-action" onClick={() => startEdit(c)}>
                           Edit
                         </button>
                       )}

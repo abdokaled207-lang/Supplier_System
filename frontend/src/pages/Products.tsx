@@ -216,7 +216,7 @@ export function Products() {
                   <td>{stockBadge(p)}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="secondary" onClick={() => setEditingProduct(p)}>
+                      <button className="edit-action" onClick={() => setEditingProduct(p)}>
                         Edit
                       </button>
                       <button className="danger" onClick={() => setPendingDelete(p)}>

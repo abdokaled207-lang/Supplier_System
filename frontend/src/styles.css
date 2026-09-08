@@ -1669,13 +1669,29 @@ tbody tr:hover {
   width: 4rem;
   margin-left: 0.5rem;
 }
+/* Plain-text "Edit" action: no button box, green, underline on hover. */
 .edit-action {
+  background: none;
+  border: none;
+  padding: 0;
   color: #16a34a;
+  font-weight: 600;
+  cursor: pointer;
   text-decoration: none;
-  border-color: #16a34a;
 }
 .edit-action:hover {
   text-decoration: underline;
+}
+
+/* Customer names read as bold text at rest; link affordance only on hover. */
+.customer-name-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+.customer-name-link:hover {
+  text-decoration: underline;
+  color: #2563eb;
 }
 
 .invoice-action {

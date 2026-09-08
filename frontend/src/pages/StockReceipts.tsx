@@ -151,7 +151,7 @@ export function StockReceipts() {
                   <td>{new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(r.receiptDate))}</td>
                   <td>
                     <div className="row-actions">
-                      <button className="secondary" onClick={() => setEditingReceipt(r)}>
+                      <button className="edit-action" onClick={() => setEditingReceipt(r)}>
                         Edit
                       </button>
                       <button className="danger" onClick={() => setPendingDelete(r)}>

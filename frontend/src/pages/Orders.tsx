@@ -408,7 +408,7 @@ const deleteOrder = useMutation({
                 </label>
                 <InputPayment orderId={o.orderId} onSubmit={addPayment.mutate} balance={o.balance} />
               
-                <Link to={`/orders/${o.orderId}/edit`} className="secondary edit-action">
+                <Link to={`/orders/${o.orderId}/edit`} className="edit-action">
                   Edit
                 </Link>
                {/* <Link to={`/orders/${o.orderId}/edit`} className="secondary">
