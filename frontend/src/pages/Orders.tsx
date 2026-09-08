@@ -352,7 +352,7 @@ const deleteOrder = useMutation({
             <div className={`card${Number(o.balance) > 0 ? " card--overdue" : ""}`} key={o.orderId}>
               <header>
                 <strong>#{o.orderId}</strong> —{" "}
-                <Link to={`/customers/${o.customerId}`}>{o.customer?.fullName}</Link>
+                <Link to={`/customers/${o.customerId}`} className="customer-name-link">{o.customer?.fullName}</Link>
                 {o.customer?.phone && waMeLink(o.customer.phone) && (
                   <a href={waMeLink(o.customer.phone)!} target="_blank" rel="noopener noreferrer" className="wa-icon" aria-label="Chat on WhatsApp">
                     <WhatsAppIcon size={14} />

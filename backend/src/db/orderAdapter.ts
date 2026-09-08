@@ -13,7 +13,7 @@ export const ORDER_WITH = {
 
 function makeAdapter(handle: Handle): OrderAdapter {
   return {
-    getCustomer: (customerId) => handle.customer.findUnique({ where: { customerId, deletedAt: null } }),
+    getCustomer: (customerId) => handle.customer.findUnique({ where: { customerId } }),
     getProducts: async (productIds) => {
       if (!productIds.length) return new Map();
       const rows = await handle.product.findMany({ where: { productId: { in: productIds } } });
@@ -71,18 +71,17 @@ function makeAdapter(handle: Handle): OrderAdapter {
       }) as unknown as Promise<OrderAdapter["updateOrder"] extends (id: number, d: unknown, i: unknown) => infer R ? R : never>;
     },
     decrementStock: async (items) => {
-      // Runs inside the transaction opened by runTransaction — no nested
-      // $transaction here (Prisma forbids it). The conditional updateMany is
-      // the atomic backstop: count 0 means stock went missing mid-flight.
-      for (const item of items) {
-        const { count } = await handle.product.updateMany({
-          where: { productId: item.productId, stockQuantity: { gte: item.quantity } },
-          data: { stockQuantity: { decrement: item.quantity } },
-        });
-        if (count === 0) {
-          throw errors.insufficientStock(`Insufficient stock for product ${item.productId}`);
+      await handle.$transaction(async (tx) => {
+        for (const item of items) {
+          const { count } = await tx.product.updateMany({
+            where: { productId: item.productId, stockQuantity: { gte: item.quantity } },
+            data: { stockQuantity: { decrement: item.quantity } },
+          });
+          if (count === 0) {
+            throw errors.insufficientStock(`Insufficient stock for product ${item.productId}`);
+          }
         }
-      }
+      });
     },
     incrementStock: (items) =>
       Promise.all(
