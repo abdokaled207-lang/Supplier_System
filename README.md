@@ -111,7 +111,9 @@ After deploying the backend to Railway and setting the above environment variabl
 
 Vercel and Railway will use these scripts automatically:
 - Frontend: `npm run build` (Vercel)
-- Backend: `npm run build` then `npm run start` (Railway)
+- Backend: `npm run postinstall` generates the Prisma client, `npm run build` compiles TypeScript, and `npm run start` runs `prisma migrate deploy` then starts the server (Railway).
+
+Railway sets `DATABASE_URL` automatically before running scripts, so migrations are applied without manual steps.
 
 ## API
 
