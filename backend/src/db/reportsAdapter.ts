@@ -13,6 +13,7 @@ export function buildReportsAdapter(prisma: Prisma.TransactionClient): ReportsAd
     const grouped = await handle.order.groupBy({
       by: ["status"],
       _count: { orderId: true },
+      where: { deletedAt: null },
     });
     return grouped.map((g) => ({ status: g.status, count: g._count.orderId }));
   }
@@ -20,7 +21,8 @@ export function buildReportsAdapter(prisma: Prisma.TransactionClient): ReportsAd
   async function customerBalances(range?: { start: Date; end: Date }) {
     const where = range ? { orderDate: { gte: range.start, lt: range.end } } : undefined;
     const customers = await handle.customer.findMany({
-      include: { orders: { where, include: { items: true, payments: true } } },
+      where: { deletedAt: null },
+      include: { orders: { where: { deletedAt: null, ...where }, include: { items: true, payments: true } } },
     });
     return customers.map((c) => {
       let totalCents = 0;
@@ -43,15 +45,17 @@ export function buildReportsAdapter(prisma: Prisma.TransactionClient): ReportsAd
 
   async function productStock() {
     const products = await handle.product.findMany({
+      where: { deletedAt: null },
       select: { productId: true, productName: true, unitPrice: true, stockQuantity: true },
     });
     return products.map((p) => ({ productId: p.productId, productName: p.productName, unitPrice: String(p.unitPrice), stockQuantity: p.stockQuantity }));
   }
 
   async function bestSellers(range?: { start: Date; end: Date }) {
+    const notDeleted = { deletedAt: null };
     const where = range
-      ? { order: { orderDate: { gte: range.start, lt: range.end }, status: { not: OrderStatus.CANCELLED } } }
-      : { order: { status: { not: OrderStatus.CANCELLED } } };
+      ? { order: { ...notDeleted, orderDate: { gte: range.start, lt: range.end }, status: { not: OrderStatus.CANCELLED } } }
+      : { order: { ...notDeleted, status: { not: OrderStatus.CANCELLED } } };
     const result = await handle.orderItem.groupBy({
       by: ["productId"],
       _sum: { quantity: true },
@@ -80,7 +84,7 @@ export function buildReportsAdapter(prisma: Prisma.TransactionClient): ReportsAd
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today.getTime() + 86_400_000);
     const orders = await handle.order.findMany({
-      where: { orderDate: { gte: today, lt: tomorrow }, status: { not: OrderStatus.CANCELLED } },
+      where: { deletedAt: null, orderDate: { gte: today, lt: tomorrow }, status: { not: OrderStatus.CANCELLED } },
       include: { items: true, payments: true },
     });
     const totalCents = orders.reduce((sum, o) => sum + toCents(orderTotals(o.items, o.payments).total), 0);
