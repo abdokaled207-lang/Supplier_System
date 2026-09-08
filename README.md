@@ -10,27 +10,28 @@ An order/stock/payment management system for a small roti business. The original
 
 ## Quick start
 
-0. **Choose a database connection.** Copy `.env.example` to `.env` at the repo root and set `DATABASE_URL`. Two options:
+0. **Choose a database connection.** Copy `backend/.env.example` to `backend/.env` and set `DATABASE_URL`. Two options:
 
-   - Docker: `docker compose up -d db` (creates `roti_chani_system`, user `app`).
-   - Local MySQL80 Windows service: set `DATABASE_URL="mysql://root:YOUR_PASSWORD@localhost:3306/roti_chani_system"` and start the service.
+    - Docker: `docker compose up -d db` (creates `roti_chani_system`, user `app`).
+    - Local MySQL80 Windows service: set `DATABASE_URL="mysql://root:YOUR_PASSWORD@localhost:3306/roti_chani_system"` and start the service.
 
 1. **Backend**
-   ```powershell
-   cd backend
-   npm install
-   Copy-Item ..\.env.example .env   # already exists with dev defaults; edit them
-   npm run db:migrate               # applies migrations in backend/prisma/migrations
-   npm run db:seed                  # 4 products + admin user
-   npm run dev                      # http://localhost:4000
-   ```
+    ```powershell
+    cd backend
+    npm install
+    Copy-Item .env.example .env   # already exists with dev defaults; edit them
+    npm run db:migrate               # applies migrations in backend/prisma/migrations
+    npm run db:seed                  # 4 products + admin user
+    npm run dev                      # http://localhost:4000
+    ```
 
 2. **Frontend** (in a second terminal)
-   ```powershell
-   cd frontend
-   npm install
-   npm run dev                      # http://localhost:5173
-   ```
+    ```powershell
+    cd frontend
+    npm install
+    Copy-Item .env.example .env   # set VITE_API_URL to your backend URL
+    npm run dev                      # http://localhost:5173
+    ```
 
 Login with the seeded admin: `admin@roti.local` / `Admin123!`.
 
@@ -76,6 +77,41 @@ Login with the seeded admin: `admin@roti.local` / `Admin123!`.
 > Restore with: `mysql -h <host> -u app -p roti_chani_system < roti_backup_YYYYMMDD_HHMMSS.sql`
 
 **Secrets** — all secrets (`DATABASE_URL`, `JWT_SECRET`, etc.) live in environment variables (`.env`). The `.env` file is gitignored. Never commit secrets to the repository.
+
+## Deployment
+
+This system is designed to be deployed to:
+- **Frontend**: Vercel (serving the Vite/React app)
+- **Backend**: Railway (Node/Express server + MySQL database)
+
+### Environment variables
+
+Set these in the respective platform dashboards:
+
+**Vercel (frontend)**:
+- `VITE_API_URL` — the URL of your deployed backend (e.g. `https://your-backend.up.railway.app/api`)
+- `VITE_PUBLIC_URL` — the URL of your deployed frontend (e.g. `https://your-app.vercel.app`) (optional)
+
+**Railway (backend)**:
+- `DATABASE_URL` — provided automatically when you add a MySQL plugin
+- `PORT` — Railway sets this automatically; do not override
+- `NODE_ENV` — set to `production`
+- `JWT_SECRET` — a random string of at least 32 characters
+- `JWT_EXPIRES_IN` — e.g. `7d` (default)
+- `CORS_ORIGIN` — your Vercel frontend URL (e.g. `https://your-app.vercel.app`)
+
+### Database migrations on first deploy
+
+After deploying the backend to Railway and setting the above environment variables:
+1. Open a shell into your Railway service (via the Railway dashboard)
+2. Run `npm run db:migrate` to apply pending migrations
+3. Optionally run `npm run db:seed` to create the default admin user and products
+
+### Build and start commands
+
+Vercel and Railway will use these scripts automatically:
+- Frontend: `npm run build` (Vercel)
+- Backend: `npm run build` then `npm run start` (Railway)
 
 ## API
 
