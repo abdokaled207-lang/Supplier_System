@@ -42,6 +42,13 @@ if (parsed.data.NODE_ENV === "production") {
       "JWT_SECRET is too weak for production. Set a random secret of at least 32 characters.",
     );
   }
+  // Without an allowlist the CORS middleware would accept every origin in
+  // production — fail fast instead of silently running open.
+  if (!parsed.data.CORS_ORIGIN?.trim()) {
+    throw new Error(
+      "CORS_ORIGIN is required in production. Set it to your frontend origin(s), e.g. CORS_ORIGIN=https://your-app.vercel.app",
+    );
+  }
 } else if (WEAK_SECRETS.has(parsed.data.JWT_SECRET)) {
   console.warn("[env] JWT_SECRET is a known default — rotate it before deploying to production.");
 }
