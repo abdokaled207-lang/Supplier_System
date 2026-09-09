@@ -19,6 +19,12 @@ export interface SystemUser {
   createdAt: string;
 }
 
+export interface DeliveryArea {
+  areaId: number;
+  name: string;
+  sequence: number;
+}
+
 export interface CustomerProfile extends Customer {
   orders: Order[];
   outstandingBalance: string;

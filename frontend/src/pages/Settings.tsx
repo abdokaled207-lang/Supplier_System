@@ -5,6 +5,7 @@ import { api, setToken } from "../api/client";
 import type { UserRole } from "../api/types";
 import { getAllSettings, type SystemSettings } from "../utils/settings";
 import { useAuth } from "../auth/auth";
+import { DeliveryAreasPanel } from "../components/DeliveryAreasPanel";
 import { InlineError } from "../components/InlineError";
 import { UsersPanel } from "../components/UsersPanel";
 import { fieldClass } from "../utils/forms";
@@ -111,6 +112,7 @@ export function Settings() {
       <h2 className="page-title">Settings</h2>
 
       {isAdmin && <UsersPanel />}
+      {isAdmin && <DeliveryAreasPanel />}
 
       <form onSubmit={handleAccountSubmit}>
         <div className="panel" style={{ marginBottom: "var(--space-4)" }}>

@@ -136,6 +136,14 @@ model ActivityLog {
   @@map("Activity_Logs")
 }
 
+model DeliveryArea {
+  areaId   Int    @id @default(autoincrement()) @map("area_id")
+  name     String @unique @db.VarChar(150)
+  sequence Int    @default(0) @map("sequence")
+
+  @@map("Delivery_Areas")
+}
+
 enum OrderStatus {
   PENDING    @map("pending")
   PROCESSING @map("processing")
