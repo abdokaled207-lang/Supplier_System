@@ -77,7 +77,7 @@ describe("Navigation Drawer", () => {
 
   it("renders brand name in topbar", () => {
     renderLayout();
-    const topbar = document.querySelector(".topbar")!;
+    const topbar = document.querySelector(".topbar") as HTMLElement;
     expect(within(topbar).getByText("ROTI CHANI KING")).toBeInTheDocument();
   });
 
