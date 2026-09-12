@@ -77,8 +77,9 @@ describe("Navigation Drawer", () => {
 
   it("renders brand name in topbar", () => {
     renderLayout();
-    const topbar = document.querySelector(".topbar") as HTMLElement;
-    expect(within(topbar).getByText("ROTI CHANI KING")).toBeInTheDocument();
+    const topbar = document.querySelector(".topbar");
+    expect(topbar).not.toBeNull();
+    expect(within(topbar as HTMLElement).getByText("ROTI CHANI KING")).toBeInTheDocument();
   });
 
   it("drawer is hidden on initial render", () => {
