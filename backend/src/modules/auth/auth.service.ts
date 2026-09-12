@@ -2,10 +2,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../../db/prisma";
 import { errors } from "../../utils/http";
 import { signToken } from "../../middleware/auth";
-
-function toWireRole(role: string) {
-  return role === "ADMIN" ? "admin" : "employee";
-}
+import { toWireRole } from "../../domain/enums";
 
 export async function login(credentials: { email: string; password: string }) {
   const user = await prisma.user.findUnique({ where: { email: credentials.email, deletedAt: null } });

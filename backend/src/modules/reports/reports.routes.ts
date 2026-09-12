@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../../db/prisma";
 import { asyncHandler } from "../../utils/async";
+import { validate } from "../../middleware/validate";
 import { parseRangeParams } from "../../domain/reports";
 import { buildReportsAdapter } from "../../db/reportsAdapter";
 import { csvResponse, toCsv } from "../../utils/csv";
@@ -53,11 +55,17 @@ router.get("/best-sellers", asyncHandler(async (req, res) => {
 }));
 
 // GET /api/reports/dashboard — aggregate stats for the dashboard (server-side)
-router.get("/dashboard", asyncHandler(async (req, res) => {
-  const threshold = Number(req.query.lowStockThreshold);
-  const lowStockThreshold = Number.isFinite(threshold) && threshold >= 0 ? threshold : 0;
-  res.json({ data: await getAdapter().dashboard(lowStockThreshold) });
-}));
+router.get(
+  "/dashboard",
+  validate(
+    z.object({ lowStockThreshold: z.coerce.number().int().min(0).optional() }),
+    "query"
+  ),
+  asyncHandler(async (req, res) => {
+    const lowStockThreshold = Number(req.query.lowStockThreshold ?? 0);
+    res.json({ data: await getAdapter().dashboard(lowStockThreshold) });
+  }),
+);
 
 // GET /api/reports/today-sales
 router.get("/today-sales", asyncHandler(async (_req, res) => {

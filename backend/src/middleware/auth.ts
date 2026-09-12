@@ -46,8 +46,6 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-export function requireAdmin(req: Request, _res: Response, next: NextFunction): void {
-  if (!req.user) return next(errors.unauthorized());
-  if (req.user.role !== "ADMIN") return next(errors.forbidden("Insufficient permissions"));
-  next();
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  return requireRole("ADMIN")(req, res, next);
 }

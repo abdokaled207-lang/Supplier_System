@@ -13,6 +13,7 @@ vi.mock("../src/db/prisma", () => ({
 
 const app = createApp();
 const token = signToken({ id: 1, email: "admin@roti.local", role: "ADMIN" });
+const employeeToken = signToken({ id: 2, email: "emp@roti.local", role: "EMPLOYEE" });
 
 const order = {
   orderId: 1,
@@ -77,6 +78,21 @@ describe("payments", () => {
 
   it("rejects an invalid payment type with 400", async () => {
     const res = await authed("post", "/api/payments").send({ orderId: 1, amount: 10, paymentType: "bitcoin" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects a non-admin user creating a payment with 403", async () => {
+    const res = await (request(app).post("/api/payments") as request.Test)
+      .set("Authorization", `Bearer ${employeeToken}`)
+      .send({ orderId: 1, amount: 10, paymentType: "cash" });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+    expect(prisma.payment.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a zero-amount payment with 400", async () => {
+    const res = await authed("post", "/api/payments").send({ orderId: 1, amount: 0, paymentType: "cash" });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });

@@ -1,18 +1,9 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../db/prisma";
 import { errors } from "../../utils/http";
+import { toDbRole, toWireRole, type WireRole } from "../../domain/enums";
 
 const MIN_PASSWORD_LENGTH = 8;
-
-function toWireRole(role: string) {
-  return role === "ADMIN" ? "admin" : "employee";
-}
-
-function parseRole(role: string): "ADMIN" | "EMPLOYEE" {
-  if (role === "admin" || role === "ADMIN") return "ADMIN";
-  if (role === "employee" || role === "EMPLOYEE") return "EMPLOYEE";
-  throw errors.badRequest("Role must be admin or employee");
-}
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
@@ -23,7 +14,7 @@ export async function listUsers() {
   return users.map((u) => ({ id: u.id, email: u.email, role: toWireRole(u.role), createdAt: u.createdAt }));
 }
 
-export async function createUser(input: { email: string; password: string; role: string }) {
+export async function createUser(input: { email: string; password: string; role: WireRole }) {
   if (input.password.length < MIN_PASSWORD_LENGTH) {
     throw errors.badRequest(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
   }
@@ -33,7 +24,7 @@ export async function createUser(input: { email: string; password: string; role:
   const data = {
     email: input.email,
     passwordHash: await bcrypt.hash(input.password, 10),
-    role: parseRole(input.role),
+    role: toDbRole(input.role),
   };
 
   const user = existing
@@ -44,18 +35,18 @@ export async function createUser(input: { email: string; password: string; role:
   return { id: user.id, email: user.email, role: toWireRole(user.role) };
 }
 
-export async function updateUserRole(id: number, role: string) {
+export async function updateUserRole(id: number, role: WireRole) {
   const user = await prisma.user.findUnique({ where: { id, deletedAt: null } });
   if (!user) throw errors.notFound("User not found");
 
-  if (user.role === "ADMIN" && parseRole(role) !== "ADMIN") {
+  if (user.role === "ADMIN" && toDbRole(role) !== "ADMIN") {
     const admins = await prisma.user.count({ where: { role: "ADMIN", deletedAt: null } });
     if (admins <= 1) throw errors.conflict("Cannot demote the last admin");
   }
 
   const updated = await prisma.user.update({
     where: { id },
-    data: { role: parseRole(role) },
+    data: { role: toDbRole(role) },
     select: { id: true, email: true, role: true },
   });
   return { id: updated.id, email: updated.email, role: toWireRole(updated.role) };

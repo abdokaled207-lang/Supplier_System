@@ -13,14 +13,15 @@ const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
 
 const createSchema = z.object({
   orderId: z.coerce.number().int().positive(),
-  amount: z.coerce.number().min(0),
+  amount: z.coerce.number().positive(),
   paymentType: z.enum(WIRE_PAYMENT_TYPES),
   notes: z.string().nullable().optional(),
 });
 
-// POST /api/payments
+// POST /api/payments — admin-only, matching every other mutation endpoint
 router.post(
   "/",
+  requireAdmin,
   validate(createSchema),
   asyncHandler(async (req, res) => {
     const payment = await createPayment(req.body as z.infer<typeof createSchema>);
