@@ -84,15 +84,17 @@ function makeAdapter(handle: Handle): OrderAdapter {
         }
       }
     },
-    incrementStock: (items) =>
-      Promise.all(
-        items.map((item) =>
-          handle.product.update({
-            where: { productId: item.productId },
-            data: { stockQuantity: { increment: item.quantity } },
-          }),
-        ),
-      ).then(() => undefined),
+    incrementStock: async (items) => {
+      // Sequential, like decrementStock: keeps every mutation on the same
+      // transaction client (handle === tx inside runTransaction) and avoids
+      // concurrent queries on a single interactive-transaction connection.
+      for (const item of items) {
+        await handle.product.update({
+          where: { productId: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+      }
+    },
     runTransaction: (fn) => prisma.$transaction((tx) => fn(makeAdapter(tx as unknown as PrismaClient))),
   };
 }

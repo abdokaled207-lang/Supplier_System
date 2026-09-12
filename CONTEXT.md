@@ -23,10 +23,10 @@ Shared vocabulary for this project. Use these terms in code and discussion.
 
 ## Dashboard metrics (web frontend `Dashboard.tsx`)
 
-Client-side aggregation of existing endpoints (no backend endpoint). Definitions are deliberate and display-only:
+Server-side aggregation via `GET /api/reports/dashboard` (backend endpoint). Definitions are deliberate and display-only:
 
-- **Low stock** — a product at or below `LOW_STOCK_THRESHOLD = 5` units is "low stock".
+- **Low stock** — a product at or below `LOW_STOCK_THRESHOLD = 5` units is "low stock" (configurable via query param).
 - **Revenue (non-cancelled)** — all-time sum of `order.total` for orders whose status is not `cancelled`.
 - **Outstanding balance** — sum of `balance` across the customer-balance report.
 - **Open orders** — orders whose status is `pending`, `processing`, or `shipped`.
-- Money is summed client-side from Decimal strings and formatted with `Intl.NumberFormat`; the backend integer-cents rule remains the authority — client aggregation is display-only, never written back.
+- Money is summed server-side in integer cents and serialized as fixed 2-decimal strings; the backend integer-cents rule remains the authority — client aggregation is display-only, never written back.
