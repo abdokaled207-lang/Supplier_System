@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { api, getToken, setToken } from "../api/client";
+import { api, setToken } from "../api/client";
 import type { UserRole } from "../api/types";
 
 interface AuthUser {
@@ -45,8 +45,4 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
-}
-
-export function isLoggedIn(): boolean {
-  return Boolean(getToken());
 }

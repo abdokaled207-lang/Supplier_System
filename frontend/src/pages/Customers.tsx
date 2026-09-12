@@ -12,8 +12,8 @@ import { Pagination } from "../components/Pagination";
 import { SearchInput } from "../components/SearchInput";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { waMeLink } from "../utils/phone";
-import { useDeliveryAreas } from "../api/hooks";
 import { fieldClass } from "../utils/forms";
+import { ALL_DELIVERY_AREAS } from "../data/deliveryAreas";
 
 const PAGE_SIZE = 100;
 
@@ -25,7 +25,6 @@ export function Customers() {
     queryKey: ["customers", page],
     queryFn: () => api.get<{ data: Customer[]; total: number; page: number; pageSize: number }>(`/customers?page=${page}&pageSize=${PAGE_SIZE}`),
   });
-  const areas = useDeliveryAreas();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [gpsLink, setGpsLink] = useState("");
@@ -159,14 +158,21 @@ export function Customers() {
           <input name="gpsLink" placeholder="GPS (optional)" type="url" autoComplete="off" value={gpsLink} onChange={(e) => setGpsLink(e.target.value)} />
         </label>
         <label className="field">
-          <span className="visually-hidden">Region</span>
-          <select name="area" aria-label="Region" value={area} onChange={(e) => setArea(e.target.value)} className={fieldClass(area)}>
-            <option value="">Region (optional)</option>
-            {(areas.data?.data ?? []).map((a) => (
-              <option key={a.areaId} value={a.name}>{a.name}</option>
-            ))}
-          </select>
+          <span className="visually-hidden">Region (optional)</span>
+          <input
+            name="area"
+            list="delivery-area-options"
+            placeholder="Region (optional)"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            className={fieldClass(area)}
+          />
         </label>
+        <datalist id="delivery-area-options">
+          {ALL_DELIVERY_AREAS.map((a) => (
+            <option key={a} value={a} />
+          ))}
+        </datalist>
         <button type="submit" disabled={create.isPending}>
           {create.isPending ? "Adding…" : "Add"}
         </button>
@@ -306,17 +312,14 @@ export function Customers() {
                 </label>
                 <label className="field">
                   <span>Region</span>
-                  <select
+                  <input
                     name="editArea"
+                    list="delivery-area-options"
+                    placeholder="Region (optional)"
                     value={editArea}
                     onChange={(e) => setEditArea(e.target.value)}
                     className={fieldClass(editArea)}
-                  >
-                    <option value="">— None —</option>
-                    {(areas.data?.data ?? []).map((a) => (
-                      <option key={a.areaId} value={a.name}>{a.name}</option>
-                    ))}
-                  </select>
+                  />
                 </label>
               </div>
               {update.isError && <InlineError message="Could not update customer. Check the phone number is unique." />}

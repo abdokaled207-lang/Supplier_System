@@ -1,6 +1,8 @@
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
+import { Drawer } from "@ark-ui/react";
+import { Activity as ActivityIcon, BarChart3, Gauge, Menu, Package, ReceiptText, Settings as SettingsIcon, Truck, Users, X } from "lucide-react";
 import { useAuth } from "./auth/auth";
 import { Login } from "./pages/Login";
 import { Customers } from "./pages/Customers";
@@ -27,12 +29,19 @@ function Protected({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function Layout({ children }: { children: ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -71,79 +80,144 @@ function Layout({ children }: { children: ReactNode }) {
     }
   }
 
+  function clearSearch() {
+    setSearchResults(null);
+    setSearchQuery("");
+  }
+
   return (
     <div className="layout">
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <aside className="sidebar">
-        <h1>{getCompanyName()}</h1>
-        <form className="sidebar-search" onSubmit={handleSearch} role="search">
-          <input
-            type="search"
-            placeholder="Search…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search customers, products, orders"
-          />
-          <button type="submit" disabled={!searchQuery.trim() || searching}>
-            {searching ? "…" : "Go"}
-          </button>
-        </form>
-        {searchResults && (
-          <div className="search-results-dropdown">
-            {searchResults.customers.length === 0 && searchResults.products.length === 0 && searchResults.orders.length === 0 && (
-              <p className="search-no-results">No results for "{searchQuery}"</p>
-            )}
-            {searchResults.customers.length > 0 && (
-              <div>
-                <p className="search-group-label">Customers ({searchResults.customers.length})</p>
-                {searchResults.customers.map((c) => (
-                  <NavLink key={c.customerId} to={`/customers/${c.customerId}`} onClick={() => { setSearchResults(null); setSearchQuery(""); }}>
-                    {c.fullName}
-                  </NavLink>
-                ))}
+      <Drawer.Root
+        open={drawerOpen}
+        onOpenChange={(details) => setDrawerOpen(details.open)}
+        closeOnEscape
+        closeOnInteractOutside
+        swipeDirection="start"
+        restoreFocus
+        finalFocusEl={() => hamburgerRef.current}
+      >
+        <header className="topbar">
+          <Drawer.Trigger ref={hamburgerRef} className="topbar-menu-btn" aria-label="Open navigation">
+            <Menu size={20} />
+          </Drawer.Trigger>
+          <Link to="/dashboard" className="topbar-brand">{getCompanyName()}</Link>
+          <div className="topbar-search-container">
+            <form className="topbar-search" onSubmit={handleSearch} role="search">
+              <input
+                type="search"
+                placeholder="Search customers, products, orders…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search customers, products, orders"
+              />
+              <button type="submit" disabled={!searchQuery.trim() || searching}>
+                {searching ? "…" : "Go"}
+              </button>
+            </form>
+            {searchResults && (
+              <div className="search-results-dropdown">
+                {searchResults.customers.length === 0 && searchResults.products.length === 0 && searchResults.orders.length === 0 && (
+                  <p className="search-no-results">No results for "{searchQuery}"</p>
+                )}
+                {searchResults.customers.length > 0 && (
+                  <div>
+                    <p className="search-group-label">Customers ({searchResults.customers.length})</p>
+                    {searchResults.customers.map((c) => (
+                      <NavLink key={c.customerId} to={`/customers/${c.customerId}`} onClick={clearSearch}>
+                        {c.fullName}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+                {searchResults.products.length > 0 && (
+                  <div>
+                    <p className="search-group-label">Products ({searchResults.products.length})</p>
+                    {searchResults.products.map((p) => (
+                      <NavLink key={p.productId} to="/products" onClick={clearSearch}>
+                        {p.productName}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+                {searchResults.orders.length > 0 && (
+                  <div>
+                    <p className="search-group-label">Orders ({searchResults.orders.length})</p>
+                    {searchResults.orders.map((o) => (
+                      <NavLink key={o.orderId} to="/orders" onClick={clearSearch}>
+                        #{o.orderId} — {o.customerName}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+                <button className="search-close" onClick={clearSearch} type="button">
+                  Close
+                </button>
               </div>
             )}
-            {searchResults.products.length > 0 && (
-              <div>
-                <p className="search-group-label">Products ({searchResults.products.length})</p>
-                {searchResults.products.map((p) => (
-                  <NavLink key={p.productId} to="/products" onClick={() => { setSearchResults(null); setSearchQuery(""); }}>
-                    {p.productName}
-                  </NavLink>
-                ))}
-              </div>
-            )}
-            {searchResults.orders.length > 0 && (
-              <div>
-                <p className="search-group-label">Orders ({searchResults.orders.length})</p>
-                {searchResults.orders.map((o) => (
-                  <NavLink key={o.orderId} to="/orders" onClick={() => { setSearchResults(null); setSearchQuery(""); }}>
-                    #{o.orderId} — {o.customerName}
-                  </NavLink>
-                ))}
-              </div>
-            )}
-            <button className="search-close" onClick={() => { setSearchResults(null); setSearchQuery(""); }} type="button">
-              Close
-            </button>
           </div>
-        )}
-        <nav aria-label="Main">
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/customers">Customers</NavLink>
-          <NavLink to="/products">Products</NavLink>
-          <NavLink to="/orders">Orders</NavLink>
-          <NavLink to="/stock-receipts">Stock Receipts</NavLink>
-          <NavLink to="/reports">Reports</NavLink>
-          <NavLink to="/activity">Activity Log</NavLink>
-          <NavLink to="/settings">Settings</NavLink>
-        </nav>
-        <div className="user-box">
-          <span>{user?.email}</span>
-          <span className="role">Role: {user?.role}</span>
-          <button className="secondary" onClick={logout}>Logout</button>
-        </div>
-      </aside>
+        </header>
+        <Drawer.Backdrop className="nav-drawer-backdrop" />
+        <Drawer.Positioner className="nav-drawer-positioner">
+          <Drawer.Content className="nav-drawer-content" id="main-navigation">
+            <div className="nav-drawer-header">
+              <Drawer.Title className="nav-drawer-title">{getCompanyName()}</Drawer.Title>
+              <Drawer.CloseTrigger className="nav-close-btn" aria-label="Close navigation">
+                <X size={20} />
+              </Drawer.CloseTrigger>
+            </div>
+            <nav className="nav-links" aria-label="Main">
+              <NavLink to="/dashboard" className="nav-link">
+                <Gauge size={18} />
+                <span>Dashboard</span>
+              </NavLink>
+
+              <p className="nav-group-label">Sell</p>
+              <NavLink to="/orders" className="nav-link">
+                <ReceiptText size={18} />
+                <span>Orders</span>
+              </NavLink>
+
+              <p className="nav-group-label">Manage</p>
+              <NavLink to="/customers" className="nav-link">
+                <Users size={18} />
+                <span>Customers</span>
+              </NavLink>
+              <NavLink to="/products" className="nav-link">
+                <Package size={18} />
+                <span>Products</span>
+              </NavLink>
+              <NavLink to="/stock-receipts" className="nav-link">
+                <Truck size={18} />
+                <span>Stock Receipts</span>
+              </NavLink>
+
+              <p className="nav-group-label">Insights</p>
+              <NavLink to="/reports" className="nav-link">
+                <BarChart3 size={18} />
+                <span>Reports</span>
+              </NavLink>
+              <NavLink to="/activity" className="nav-link">
+                <ActivityIcon size={18} />
+                <span>Activity Log</span>
+              </NavLink>
+
+              <p className="nav-group-label">Account</p>
+              <NavLink to="/settings" className="nav-link">
+                <SettingsIcon size={18} />
+                <span>Settings</span>
+              </NavLink>
+            </nav>
+            <div className="nav-footer">
+              <div className="nav-user-info">
+                <span>{user?.email}</span>
+                <span className="nav-user-role">Role: {user?.role}</span>
+              </div>
+              <button className="secondary nav-logout-btn" onClick={logout}>Logout</button>
+            </div>
+          </Drawer.Content>
+        </Drawer.Positioner>
+      </Drawer.Root>
       <main className="content" id="main-content">
         <ErrorBoundary>{children}</ErrorBoundary>
       </main>

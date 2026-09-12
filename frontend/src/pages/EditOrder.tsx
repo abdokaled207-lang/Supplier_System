@@ -2,21 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "../api/client";
-import { useCustomers, useProducts } from "../api/hooks";
+import { useProducts } from "../api/hooks";
 import { formatMoney } from "../utils/money";
 import type { Order } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { CustomerSelect } from "../components/CustomerSelect";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
-import { formatExpected, toDatetimeLocal, toInputDate } from "../utils/datetime";
-
-function parseDdMmYy(str: string): Date | null {
-  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!m) return null;
-  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-  if (isNaN(d.getTime())) return null;
-  return d;
-}
+import { ProductSelect } from "../components/ProductSelect";
+import { formatExpected, toDatetimeLocal, parseDdMmYy, toInputDate } from "../utils/datetime";
 
 export function EditOrder() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +24,6 @@ export function EditOrder() {
     enabled: Number.isFinite(orderId) && orderId > 0,
   });
   const products = useProducts();
-  const customers = useCustomers();
 
   const order = orderQuery.data?.data;
   const [customerId, setCustomerId] = useState("");
@@ -159,23 +152,16 @@ export function EditOrder() {
       <div className="panel">
         <label className="field">
           <span>Customer</span>
-          <select
-            value={customerId}
-            onChange={(e) => {
-              const next = e.target.value;
+          <CustomerSelect
+            customerId={customerId}
+            onCustomerIdChange={(next) => {
               if (next !== originalCustomerId && next !== customerId) {
                 setPendingCustomer(next);
               } else {
                 setCustomerId(next);
               }
             }}
-          >
-            {customers.data?.data.map((c) => (
-              <option key={c.customerId} value={c.customerId}>
-                {c.fullName}
-              </option>
-            ))}
-          </select>
+          />
         </label>
 
         <div className="inline-form date-row">
@@ -215,14 +201,7 @@ export function EditOrder() {
         <div className="inline-form">
           <label className="field">
             <span className="visually-hidden">Product</span>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-              <option value="">Select product</option>
-              {products.data?.data.map((p) => (
-                <option key={p.productId} value={p.productId}>
-                  {p.productName} ({p.stockQuantity})
-                </option>
-              ))}
-            </select>
+            <ProductSelect productId={productId} onProductIdChange={setProductId} />
           </label>
           <label className="field">
             <span className="visually-hidden">Quantity</span>

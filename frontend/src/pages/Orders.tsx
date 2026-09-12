@@ -2,7 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
-import { useCustomers, useProducts } from "../api/hooks";
+import { useProducts } from "../api/hooks";
 import { fieldClass } from "../utils/forms";
 import type { Order, OrderStatus, PaymentType } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -12,24 +12,13 @@ import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { Pagination } from "../components/Pagination";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
 import { waMeLink } from "../utils/phone";
-import { formatExpected, formatExact, formatRelative, toInputDate } from "../utils/datetime";
+import { formatExpected, formatExact, formatRelative, parseDdMmYy, toInputDate } from "../utils/datetime";
+import { StatusBadge } from "../components/StatusBadge";
+import { ProductSelect } from "../components/ProductSelect";
+import { CustomerSelect } from "../components/CustomerSelect";
 
 const STATUS_OPTIONS: OrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"];
 const PAGE_SIZE = 100;
-
-function statusBadge(status: OrderStatus) {
-  const tone =
-    status === "delivered" ? "badge--green" : status === "cancelled" ? "badge--red" : status === "pending" ? "badge--amber" : "badge--indigo";
-  return <span className={`badge ${tone}`}>{status}</span>;
-}
-
-function parseDdMmYy(str: string): Date | null {
-  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!m) return null;
-  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-  if (isNaN(d.getTime())) return null;
-  return d;
-}
 
 export function Orders() {
   const qc = useQueryClient();
@@ -55,7 +44,6 @@ export function Orders() {
     queryFn: () => api.get<{ data: Order[]; total: number; page: number; pageSize: number }>(`/orders?page=${page}&pageSize=${PAGE_SIZE}`),
   });
   const products = useProducts();
-  const customers = useCustomers();
 
   const [customerId, setCustomerId] = useState("");
   const [productId, setProductId] = useState("");
@@ -198,17 +186,7 @@ const deleteOrder = useMutation({
       <div className="panel" id="new-order-form">
         <h3>New order</h3>
         <div className="inline-form">
-          <label className="field">
-            <span className="visually-hidden">Customer</span>
-            <select name="customerId" value={customerId} onChange={(e) => setCustomerId(e.target.value)} className={fieldClass(customerId, { required: true })}>
-              <option value="">Select customer</option>
-              {customers.data?.data.map((c) => (
-                <option key={c.customerId} value={c.customerId}>
-                  {c.fullName}
-                </option>
-              ))}
-            </select>
-          </label>
+          <CustomerSelect customerId={customerId} onCustomerIdChange={setCustomerId} />
           <button
             type="button"
             className="secondary"
@@ -217,17 +195,7 @@ const deleteOrder = useMutation({
           >
             {fetchLastOrder.isPending ? "Loading…" : "Repeat last order"}
           </button>
-          <label className="field">
-            <span className="visually-hidden">Product</span>
-            <select name="productId" value={productId} onChange={(e) => setProductId(e.target.value)} className={fieldClass(productId, { required: true })}>
-              <option value="">Select product</option>
-              {products.data?.data.map((p) => (
-                <option key={p.productId} value={p.productId}>
-                  {p.productName} ({p.stockQuantity})
-                </option>
-              ))}
-            </select>
-          </label>
+<ProductSelect productId={productId} onProductIdChange={setProductId} />
           <label className="field">
             <span className="visually-hidden">Quantity</span>
             <input name="quantity" type="number" min="1" autoComplete="off" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" required className={fieldClass(quantity, { required: true })} />
@@ -358,7 +326,7 @@ const deleteOrder = useMutation({
                     <WhatsAppIcon size={14} />
                   </a>
                 )}{" "}
-                {statusBadge(o.status)}
+                <StatusBadge status={o.status} />
                 {o.expectedDeliveryAt && (
                   <span className="order-expected">Expected: {formatExpected(o.expectedDeliveryAt)}</span>
                 )}
@@ -408,29 +376,16 @@ const deleteOrder = useMutation({
                 </label>
                 <InputPayment orderId={o.orderId} onSubmit={addPayment.mutate} balance={o.balance} />
               
-                <Link to={`/orders/${o.orderId}/edit`} className="edit-action">
+<Link to={`/orders/${o.orderId}/edit`} className="edit-action">
                   Edit
                 </Link>
-               {/* <Link to={`/orders/${o.orderId}/edit`} className="secondary">
-               Edit
-               </Link> */}
-                    <button type="button" className="danger" onClick={() => setPendingDelete(o.orderId)}>
+                <button type="button" className="danger" onClick={() => setPendingDelete(o.orderId)}>
                     Delete
                     </button>
-                   <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary invoice-action">
-                   Print Invoice
-                    </a>
-                    
-                    {/* <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary">
+                    <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary invoice-action">
                     Print Invoice
-                    </a> */}
-                {/* <Link to={`/orders/${o.orderId}/edit`} className="secondary">
-                  Edit
-                </Link>
-                <a href={`/orders/${o.orderId}/invoice`} target="_blank" rel="noreferrer" className="secondary">
-                  Print Invoice
-                </a> */}
-              </div>
+                    </a>
+               </div>
             </div>
           ))}
         </div>
@@ -481,21 +436,6 @@ const deleteOrder = useMutation({
       )}
     </section>
   );
-      {/* {pendingStatusChange && (
-        <ConfirmDialog
-          title={`Change order status to "${pendingStatusChange.status}"?`}
-          message="This will update the order status."
-          confirmLabel="Change"
-          variant="info"
-          onConfirm={() => {
-            setStatus.mutate({ id: pendingStatusChange.id, status: pendingStatusChange.status });
-            setPendingStatusChange(null);
-          }}
-          onCancel={() => setPendingStatusChange(null)}
-        />
-      )}
-    </section>
-  ); */}
 }
 
 function InputPayment({ orderId, onSubmit, balance }: { orderId: number; onSubmit: (p: { orderId: number; amount: number; paymentType: PaymentType }) => void; balance: string }) {

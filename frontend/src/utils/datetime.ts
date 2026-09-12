@@ -57,3 +57,12 @@ export function formatRelative(iso: string, now = Date.now()): string {
   const year = Math.round(day / 365);
   return `${year} year${year === 1 ? "" : "s"} ago`;
 }
+
+// Parse a DD/MM/YYYY string into a local Date (or null if malformed).
+export function parseDdMmYy(str: string): Date | null {
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  if (isNaN(d.getTime())) return null;
+  return d;
+}

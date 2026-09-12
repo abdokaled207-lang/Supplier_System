@@ -3,18 +3,13 @@ import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { formatMoney } from "../utils/money";
-import type { CustomerProfile, OrderStatus } from "../api/types";
+import type { CustomerProfile } from "../api/types";
 import { useAuth } from "../auth/auth";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { WhatsAppIcon } from "../components/WhatsAppIcon";
+import { StatusBadge } from "../components/StatusBadge";
 import { waMeLink } from "../utils/phone";
-
-function statusBadge(status: OrderStatus) {
-  const tone =
-    status === "delivered" ? "badge--green" : status === "cancelled" ? "badge--red" : status === "pending" ? "badge--amber" : "badge--indigo";
-  return <span className={`badge ${tone}`}>{status}</span>;
-}
 
 export function CustomerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -184,7 +179,7 @@ function ProfileContent({ customer }: { customer: CustomerProfile }) {
           {customer.orders.map((o) => (
             <div className={`card${Number(o.balance) > 0 ? " card--overdue" : ""}`} key={o.orderId}>
               <header>
-                <strong>#{o.orderId}</strong> — {new Date(o.orderDate).toLocaleDateString("en-MY")} {statusBadge(o.status)}
+                <strong>#{o.orderId}</strong> — {new Date(o.orderDate).toLocaleDateString("en-MY")} <StatusBadge status={o.status} />
               </header>
               <table>
                 <thead>

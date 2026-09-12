@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
-import type { Product, StockReceipt } from "../api/types";
+import type { StockReceipt } from "../api/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EditReceiptModal } from "../components/EditReceiptModal";
 import { EmptyState } from "../components/EmptyState";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { Pagination } from "../components/Pagination";
+import { ProductSelect } from "../components/ProductSelect";
 import { UndoToast } from "../components/UndoToast";
 
 const PAGE_SIZE = 100;
@@ -19,7 +20,6 @@ export function StockReceipts() {
     queryKey: ["receipts", page],
     queryFn: () => api.get<{ data: StockReceipt[]; total: number; page: number; pageSize: number }>(`/stock-receipts?page=${page}&pageSize=${PAGE_SIZE}`),
   });
-  const products = useQuery({ queryKey: ["products"], queryFn: () => api.get<{ data: Product[] }>("/products") });
 
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -85,14 +85,7 @@ export function StockReceipts() {
         >
           <label className="field">
             <span className="visually-hidden">Product</span>
-            <select name="productId" value={productId} onChange={(e) => setProductId(e.target.value)}>
-              <option value="">Select product</option>
-              {products.data?.data.map((p) => (
-                <option key={p.productId} value={p.productId}>
-                  {p.productName} ({p.stockQuantity})
-                </option>
-              ))}
-            </select>
+            <ProductSelect productId={productId} onProductIdChange={setProductId} />
           </label>
           <label className="field">
             <span className="visually-hidden">Quantity</span>
