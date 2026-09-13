@@ -1,7 +1,7 @@
-import { prisma } from "../../db/prisma";
-import { errors } from "../../utils/http";
-import { logActivity } from "../../utils/activityLog";
-import { fromCents, toCents } from "../../utils/money";
+import { prisma } from "../../db/prisma.js";
+import { errors } from "../../utils/http.js";
+import { logActivity } from "../../utils/activityLog.js";
+import { fromCents, toCents } from "../../utils/money.js";
 
 const PRODUCT_SUMMARY_SELECT = {
   productId: true,

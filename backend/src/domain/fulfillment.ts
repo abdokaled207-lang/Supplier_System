@@ -1,7 +1,7 @@
 import type { OrderStatus } from "@prisma/client";
-import { errors } from "../utils/http";
-import type { Money } from "../utils/money";
-import { assertTransition } from "./orderStatus";
+import { errors } from "../utils/http.js";
+import type { Money } from "../utils/money.js";
+import { assertTransition } from "./orderStatus.js";
 
 // Deep module: the order-intake and status-transition flows. A caller supplies a
 // small DB adapter (a seam). The module never creates the DB itself — production

@@ -1,21 +1,21 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./modules/auth/auth.routes";
-import healthRoutes from "./modules/health/health.routes";
-import customersRoutes from "./modules/customers/customers.routes";
-import productsRoutes from "./modules/products/products.routes";
-import ordersRoutes from "./modules/orders/orders.routes";
-import paymentsRoutes from "./modules/payments/payments.routes";
-import stockReceiptsRoutes from "./modules/stockReceipts/stockReceipts.routes";
-import reportsRoutes from "./modules/reports/reports.routes";
-import searchRoutes from "./modules/search/search.routes";
-import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes";
-import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes";
-import imageProxyRoutes from "./modules/images/images.routes";
-import usersRoutes from "./modules/users/users.routes";
-import { requireAuth } from "./middleware/auth";
-import { errorHandler } from "./middleware/error";
-import { env } from "./config/env";
+import authRoutes from "./modules/auth/auth.routes.js";
+import healthRoutes from "./modules/health/health.routes.js";
+import customersRoutes from "./modules/customers/customers.routes.js";
+import productsRoutes from "./modules/products/products.routes.js";
+import ordersRoutes from "./modules/orders/orders.routes.js";
+import paymentsRoutes from "./modules/payments/payments.routes.js";
+import stockReceiptsRoutes from "./modules/stockReceipts/stockReceipts.routes.js";
+import reportsRoutes from "./modules/reports/reports.routes.js";
+import searchRoutes from "./modules/search/search.routes.js";
+import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes.js";
+import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes.js";
+import imageProxyRoutes from "./modules/images/images.routes.js";
+import usersRoutes from "./modules/users/users.routes.js";
+import { requireAuth } from "./middleware/auth.js";
+import { errorHandler } from "./middleware/error.js";
+import { env } from "./config/env.js";
 
 export function createApp() {
   const app = express();

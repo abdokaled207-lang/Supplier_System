@@ -1,6 +1,6 @@
-import { prisma } from "../../db/prisma";
-import { errors } from "../../utils/http";
-import { logActivity } from "../../utils/activityLog";
+import { prisma } from "../../db/prisma.js";
+import { errors } from "../../utils/http.js";
+import { logActivity } from "../../utils/activityLog.js";
 
 export async function listReceipts(page: { skip: number; take: number; page: number; pageSize: number }) {
   const [receipts, total] = await Promise.all([

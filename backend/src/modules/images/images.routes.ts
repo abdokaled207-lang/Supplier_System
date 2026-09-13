@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { asyncHandler } from "../../utils/async";
-import { errors } from "../../utils/http";
+import { asyncHandler } from "../../utils/async.js";
+import { errors } from "../../utils/http.js";
 
 // Same-origin proxy for invoice images (logo, signature). External hosts don't
 // send CORS headers, so html2canvas silently drops them from the generated PDF;

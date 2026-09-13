@@ -1,9 +1,9 @@
-import { prisma } from "../../db/prisma";
-import { errors } from "../../utils/http";
-import { decorateOrder } from "../../domain/orderMoney";
-import { toCents, fromCents } from "../../utils/money";
+import { prisma } from "../../db/prisma.js";
+import { errors } from "../../utils/http.js";
+import { decorateOrder } from "../../domain/orderMoney.js";
+import { toCents, fromCents } from "../../utils/money.js";
 import { OrderStatus } from "@prisma/client";
-import { logActivity } from "../../utils/activityLog";
+import { logActivity } from "../../utils/activityLog.js";
 
 export async function listCustomers(page: { skip: number; take: number }) {
   const [customers, total] = await Promise.all([

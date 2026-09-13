@@ -1,5 +1,5 @@
 import type { PaymentStatus } from "@prisma/client";
-import { fromCents, toCents, type Money } from "../utils/money";
+import { fromCents, toCents, type Money } from "../utils/money.js";
 
 // Deep module: the "how much is this order worth / how much is paid" rules live
 // here, hidden behind a tiny interface. All totals are computed in integer cents

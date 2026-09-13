@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { z } from "zod";
-import { asyncHandler } from "../../utils/async";
-import { validate } from "../../middleware/validate";
-import { requireRole } from "../../middleware/auth";
+import { asyncHandler } from "../../utils/async.js";
+import { validate } from "../../middleware/validate.js";
+import { requireRole } from "../../middleware/auth.js";
 import {
   createUser,
   deactivateUser,
   listUsers,
   resetUserPassword,
   updateUserRole,
-} from "./users.service";
+} from "./users.service.js";
 
 const router = Router();
 

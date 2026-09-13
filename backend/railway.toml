@@ -1,0 +1,20 @@
+# Railway configuration for the Roti Chani backend service.
+# Docs: https://docs.railway.com/reference/config-as-code
+#
+# This file is read when a Railway service is rooted at backend/.
+# It forces the Railpack builder and pins the exact build/start commands,
+# so Railway does NOT fall back to the Dockerfile in this directory.
+
+[build]
+builder = "RAILPACK"
+# Generates the Prisma client, then compiles TypeScript to dist/.
+buildCommand = "npm run db:generate && npm run build"
+
+[deploy]
+# Apply pending migrations, then boot the compiled server (never tsx watch).
+startCommand = "node dist/index.js"
+preDeployCommand = "npm run db:migrate"
+# App exposes GET /health (see src/app.ts).
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ALWAYS"

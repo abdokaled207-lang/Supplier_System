@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { asyncHandler } from "../../utils/async";
-import { requireRole } from "../../middleware/auth";
-import { parsePagination, paginated } from "../../utils/pagination";
-import { listActivityLogs } from "./activityLogs.service";
+import { asyncHandler } from "../../utils/async.js";
+import { requireRole } from "../../middleware/auth.js";
+import { parsePagination, paginated } from "../../utils/pagination.js";
+import { listActivityLogs } from "./activityLogs.service.js";
 
 const router = Router();
 

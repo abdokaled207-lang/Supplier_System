@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { prisma } from "./prisma";
-import { errors } from "../utils/http";
-import type { CreateOrderData, OrderAdapter, OrderItemRow, OrderRow } from "../domain/fulfillment";
+import { prisma } from "./prisma.js";
+import { errors } from "../utils/http.js";
+import type { CreateOrderData, OrderAdapter, OrderItemRow, OrderRow } from "../domain/fulfillment.js";
 
 type Handle = Pick<PrismaClient, "order" | "customer" | "product" | "orderItem" | "$transaction">;
 

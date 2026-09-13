@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { MulterError } from "multer";
 import { ZodError } from "zod";
-import { AppError } from "../utils/http";
-import { UnderTotalError } from "../domain/orderMoney";
+import { AppError } from "../utils/http.js";
+import { UnderTotalError } from "../domain/orderMoney.js";
 
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (error instanceof UnderTotalError) {

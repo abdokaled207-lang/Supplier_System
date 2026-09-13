@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { asyncHandler } from "../../utils/async";
-import { validate } from "../../middleware/validate";
-import { requireAdmin } from "../../middleware/auth";
-import { parsePagination, paginated } from "../../utils/pagination";
+import { asyncHandler } from "../../utils/async.js";
+import { validate } from "../../middleware/validate.js";
+import { requireAdmin } from "../../middleware/auth.js";
+import { parsePagination, paginated } from "../../utils/pagination.js";
 import {
   createCustomer,
   getCustomerProfile,
@@ -11,7 +11,7 @@ import {
   restoreCustomer,
   softDeleteCustomer,
   updateCustomer,
-} from "./customers.service";
+} from "./customers.service.js";
 
 const router = Router();
 

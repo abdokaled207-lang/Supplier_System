@@ -1,16 +1,16 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../../db/prisma";
-import { asyncHandler } from "../../utils/async";
-import { errors } from "../../utils/http";
-import { validate } from "../../middleware/validate";
-import { requireAdmin } from "../../middleware/auth";
-import { decorateOrder, assertTotalCoversPaid } from "../../domain/orderMoney";
-import { toOrderStatus, WIRE_ORDER_STATUSES } from "../../domain/enums";
-import { createOrder, transitionOrderStatus, editOrder } from "../../domain/fulfillment";
-import { orderDb, ORDER_WITH } from "../../db/orderAdapter";
-import { parsePagination, paginated } from "../../utils/pagination";
-import { logActivity } from "../../utils/activityLog";
+import { prisma } from "../../db/prisma.js";
+import { asyncHandler } from "../../utils/async.js";
+import { errors } from "../../utils/http.js";
+import { validate } from "../../middleware/validate.js";
+import { requireAdmin } from "../../middleware/auth.js";
+import { decorateOrder, assertTotalCoversPaid } from "../../domain/orderMoney.js";
+import { toOrderStatus, WIRE_ORDER_STATUSES } from "../../domain/enums.js";
+import { createOrder, transitionOrderStatus, editOrder } from "../../domain/fulfillment.js";
+import { orderDb, ORDER_WITH } from "../../db/orderAdapter.js";
+import { parsePagination, paginated } from "../../utils/pagination.js";
+import { logActivity } from "../../utils/activityLog.js";
 
 const router = Router();
 

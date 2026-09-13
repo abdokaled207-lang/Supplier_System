@@ -1,8 +1,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { OrderStatus } from "@prisma/client";
-import { fromCents, toCents } from "../utils/money";
-import { orderTotals } from "../domain/orderMoney";
-import type { ReportsAdapter } from "../domain/reports";
+import { fromCents, toCents } from "../utils/money.js";
+import { orderTotals } from "../domain/orderMoney.js";
+import type { ReportsAdapter } from "../domain/reports.js";
 
 type Handle = Pick<PrismaClient, "order" | "customer" | "product" | "orderItem">;
 

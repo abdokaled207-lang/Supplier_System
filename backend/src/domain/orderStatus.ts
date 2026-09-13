@@ -1,5 +1,5 @@
 import type { OrderStatus } from "@prisma/client";
-import { errors } from "../utils/http";
+import { errors } from "../utils/http.js";
 
 // Deep module: the order state machine. The table + the guard live here, not in a
 // route file. Routes just ask "is this move legal?" and get a typed error back.

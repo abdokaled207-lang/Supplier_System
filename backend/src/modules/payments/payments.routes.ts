@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { asyncHandler } from "../../utils/async";
-import { validate } from "../../middleware/validate";
-import { requireAdmin } from "../../middleware/auth";
-import { parsePagination, paginated } from "../../utils/pagination";
-import { WIRE_PAYMENT_TYPES } from "../../domain/enums";
-import { createPayment, listPayments, listPaymentsForOrder, restorePayment, softDeletePayment } from "./payments.service";
+import { asyncHandler } from "../../utils/async.js";
+import { validate } from "../../middleware/validate.js";
+import { requireAdmin } from "../../middleware/auth.js";
+import { parsePagination, paginated } from "../../utils/pagination.js";
+import { WIRE_PAYMENT_TYPES } from "../../domain/enums.js";
+import { createPayment, listPayments, listPaymentsForOrder, restorePayment, softDeletePayment } from "./payments.service.js";
 
 const router = Router();
 

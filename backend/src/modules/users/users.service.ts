@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../db/prisma";
-import { errors } from "../../utils/http";
-import { toDbRole, toWireRole, type WireRole } from "../../domain/enums";
+import { prisma } from "../../db/prisma.js";
+import { errors } from "../../utils/http.js";
+import { toDbRole, toWireRole, type WireRole } from "../../domain/enums.js";
 
 const MIN_PASSWORD_LENGTH = 8;
 

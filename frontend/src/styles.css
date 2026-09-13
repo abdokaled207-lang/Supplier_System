@@ -2,20 +2,30 @@
    Plain CSS (no framework). Web Interface Guidelines-aware. */
 
 :root {
-  --bg: #f3f4f6;
+  --bg: #f4f7f4;
   --surface: #ffffff;
-  --surface-2: #f9fafb;
+  --surface-2: #f9fbf9;
   --surface-raised: #ffffff;
   --text: #1f2937;
   --text-muted: #6b7280;
   --text-faint: #9ca3af;
-  --border: #d1d5db;
-  --border-light: #e5e7eb;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-soft: #e0e7ff;
-  --primary-soft-text: #3730a3;
-  --color-primary: #2563eb;
+  --border: #d8e4dc;
+  --border-light: #e5efe9;
+  --primary: #0f7a4a;
+  --primary-hover: #0b5d3b;
+  --primary-soft: #e7f5ed;
+  --primary-soft-text: #0b5d3b;
+  --color-primary: #0f7a4a;
+  --color-primary-dark: #0b5d3b;
+  --color-primary-tint: #e7f5ed;
+  --app-background: #f4f7f4;
+  --surface-secondary: #f9fbf9;
+  --icon-bg-green: #e7f5ed;
+  --icon-bg-blue: #e0ebff;
+  --icon-bg-purple: #ede9fe;
+  --icon-bg-amber: #fdf0d5;
+  --icon-bg-teal: #dcf4f0;
+  --icon-bg-rose: #fde8e8;
   --inv-dark: #212121;
   --inv-charcoal: #2C2C2C;
   --inv-muted: #757575;
@@ -455,8 +465,8 @@ tbody tr:hover {
 }
 
 .badge--indigo {
-  background: var(--primary-soft);
-  color: var(--primary-soft-text);
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
 .badge--green {
@@ -489,11 +499,37 @@ tbody tr:hover {
 }
 
 .stat-card {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   box-shadow: var(--shadow-card);
 }
+
+.stat-card__icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-card__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.stat-card__icon--green { background: var(--icon-bg-green); color: #0b5d3b; }
+.stat-card__icon--blue { background: var(--icon-bg-blue); color: #1d4ed8; }
+.stat-card__icon--purple { background: var(--icon-bg-purple); color: #5b21b6; }
+.stat-card__icon--amber { background: var(--icon-bg-amber); color: #92400e; }
+.stat-card__icon--teal { background: var(--icon-bg-teal); color: #0f766e; }
+.stat-card__icon--rose { background: var(--icon-bg-rose); color: #9f1239; }
 
 .stat-card .stat-label {
   font-size: 0.8rem;
@@ -541,6 +577,24 @@ tbody tr:hover {
 
 .product-link svg {
   color: var(--text-muted);
+}
+
+.product-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--icon-bg-green);
+  color: #0b5d3b;
+  flex-shrink: 0;
+}
+
+.product-icon svg {
+  width: 14px;
+  height: 14px;
+  color: inherit;
 }
 
 .clickable-row td a,
@@ -1840,13 +1894,13 @@ tbody tr:hover {
 }
 .customer-name-link:hover {
   text-decoration: underline;
-  color: #2563eb;
+  color: var(--primary);
 }
 
 .invoice-action {
-  color: #2563eb;
+  color: var(--primary);
   text-decoration: none;
-  border-color: #2563eb;
+  border-color: var(--primary);
 }
 .invoice-action:hover {
   text-decoration: underline;

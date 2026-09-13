@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { asyncHandler } from "../../utils/async";
-import { validate } from "../../middleware/validate";
-import { searchAll } from "./search.service";
+import { asyncHandler } from "../../utils/async.js";
+import { validate } from "../../middleware/validate.js";
+import { searchAll } from "./search.service.js";
 
 const router = Router();
 

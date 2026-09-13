@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
-import { asyncHandler } from "../../utils/async";
-import { requireAuth } from "../../middleware/auth";
-import { login, updateMe } from "./auth.service";
+import { asyncHandler } from "../../utils/async.js";
+import { requireAuth } from "../../middleware/auth.js";
+import { login, updateMe } from "./auth.service.js";
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

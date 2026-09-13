@@ -3,12 +3,15 @@ import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
 import { randomBytes } from "node:crypto";
-import { asyncHandler } from "../../utils/async";
-import { errors } from "../../utils/http";
-import { logActivity } from "../../utils/activityLog";
+import { asyncHandler } from "../../utils/async.js";
+import { errors } from "../../utils/http.js";
+import { logActivity } from "../../utils/activityLog.js";
+import { env } from "../../config/env.js";
 
 // Where uploaded invoice PDFs live. Override with INVOICES_DIR if needed.
-export const INVOICES_DIR = path.resolve(process.env.INVOICES_DIR ?? path.join(process.cwd(), "storage", "invoices"));
+// On Railway, set INVOICES_DIR to an absolute path backed by a persistent
+// volume (the container filesystem is ephemeral and resets on redeploy).
+export const INVOICES_DIR = path.resolve(env.INVOICES_DIR ?? path.join(process.cwd(), "storage", "invoices"));
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 

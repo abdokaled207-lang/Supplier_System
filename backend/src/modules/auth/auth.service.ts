@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../db/prisma";
-import { errors } from "../../utils/http";
-import { signToken } from "../../middleware/auth";
-import { toWireRole } from "../../domain/enums";
+import { prisma } from "../../db/prisma.js";
+import { errors } from "../../utils/http.js";
+import { signToken } from "../../middleware/auth.js";
+import { toWireRole } from "../../domain/enums.js";
 
 export async function login(credentials: { email: string; password: string }) {
   const user = await prisma.user.findUnique({ where: { email: credentials.email, deletedAt: null } });

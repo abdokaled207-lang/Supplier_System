@@ -1,5 +1,5 @@
 import type { OrderStatus, PaymentType, UserRole } from "@prisma/client";
-import { errors } from "../utils/http";
+import { errors } from "../utils/http.js";
 
 // Single home for wire-string <-> DB-enum vocabulary. Replaces the per-route
 // STATUS_MAP / TYPE_MAP constants so the mapping lives in exactly one place.

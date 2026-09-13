@@ -13,6 +13,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(10),
   JWT_EXPIRES_IN: z.string().default("7d"),
   CORS_ORIGIN: z.string().optional(),
+  INVOICES_DIR: z.string().optional(),
   SEED_ADMIN_EMAIL: z.string().optional(),
   SEED_ADMIN_PASSWORD: z.string().optional(),
 });

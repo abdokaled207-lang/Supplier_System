@@ -7,7 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { InlineError } from "../components/InlineError";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { getSetting } from "../utils/settings";
-import { Clock, Settings, Truck, CheckCircle, XCircle } from "lucide-react";
+import { CircleDollarSign, ClipboardList, Clock, DollarSign, Settings, ShoppingBag, TrendingUp, Truck, CheckCircle, XCircle } from "lucide-react";
 import { ProductImage } from "../components/ProductImage";
 
 const LOW_STOCK_THRESHOLD = Number(getSetting("lowStockThreshold"));
@@ -49,12 +49,12 @@ export function Dashboard() {
   const lowStock = statsData?.lowStock ?? [];
 
   const stats = [
-    { label: "Today's sales", value: today ? money.format(cell(today.total)) : "—", to: "/orders?date=today" },
-    { label: "Today's orders", value: today ? String(today.count) : "—", to: "/orders?date=today" },
-    { label: "Total orders", value: String(statsData?.totalOrders ?? 0), to: "/orders" },
-    { label: "Open orders", value: String(statsData?.openOrders ?? 0), to: "/orders" },
-    { label: "Revenue (non-cancelled)", value: statsData ? money.format(cell(statsData.revenue)) : "—", to: "/orders" },
-    { label: "Outstanding balance", value: statsData ? money.format(cell(statsData.outstanding)) : "—", to: "/orders?balance=positive" },
+    { label: "Today's sales", value: today ? money.format(cell(today.total)) : "—", to: "/orders?date=today", icon: <DollarSign aria-hidden="true" />, tint: "green" },
+    { label: "Today's orders", value: today ? String(today.count) : "—", to: "/orders?date=today", icon: <ShoppingBag aria-hidden="true" />, tint: "blue" },
+    { label: "Total orders", value: String(statsData?.totalOrders ?? 0), to: "/orders", icon: <ClipboardList aria-hidden="true" />, tint: "purple" },
+    { label: "Open orders", value: String(statsData?.openOrders ?? 0), to: "/orders", icon: <Clock aria-hidden="true" />, tint: "amber" },
+    { label: "Revenue (non-cancelled)", value: statsData ? money.format(cell(statsData.revenue)) : "—", to: "/orders", icon: <TrendingUp aria-hidden="true" />, tint: "teal" },
+    { label: "Outstanding balance", value: statsData ? money.format(cell(statsData.outstanding)) : "—", to: "/orders?balance=positive", icon: <CircleDollarSign aria-hidden="true" />, tint: "rose" },
   ];
 
   return (
@@ -64,6 +64,7 @@ export function Dashboard() {
       <div className="dashboard-grid">
         {stats.map((s) => (
           <Link className="stat-card stat-card--link" key={s.label} to={s.to}>
+            <span className={`stat-card__icon stat-card__icon--${s.tint}`} aria-hidden="true">{s.icon}</span>
             <p className="stat-label">{s.label}</p>
             <p className="stat-value">{s.value}</p>
           </Link>
@@ -147,7 +148,7 @@ export function Dashboard() {
                 <tr key={p.productId} className="clickable-row">
                   <td>
                     <Link className="product-link" to={`/products/${p.productId}`}>
-                      <ProductImage imageUrl={p.imageUrl} productName={p.productName} size={20} />
+                      <ProductImage imageUrl={p.imageUrl} productName={p.productName} size={20} circle />
                       {p.productName}
                     </Link>
                   </td>

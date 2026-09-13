@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../../db/prisma";
-import { asyncHandler } from "../../utils/async";
-import { validate } from "../../middleware/validate";
-import { parseRangeParams } from "../../domain/reports";
-import { buildReportsAdapter } from "../../db/reportsAdapter";
-import { csvResponse, toCsv } from "../../utils/csv";
+import { prisma } from "../../db/prisma.js";
+import { asyncHandler } from "../../utils/async.js";
+import { validate } from "../../middleware/validate.js";
+import { parseRangeParams } from "../../domain/reports.js";
+import { buildReportsAdapter } from "../../db/reportsAdapter.js";
+import { csvResponse, toCsv } from "../../utils/csv.js";
 
 const router = Router();
 
