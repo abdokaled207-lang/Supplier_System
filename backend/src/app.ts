@@ -13,6 +13,7 @@ import activityLogsRoutes from "./modules/activityLogs/activityLogs.routes.js";
 import invoicesRoutes, { INVOICES_DIR } from "./modules/invoices/invoices.routes.js";
 import imageProxyRoutes from "./modules/images/images.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";
+import settingsRoutes from "./modules/settings/settings.routes.js";
 import { requireAuth } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import { env } from "./config/env.js";
@@ -61,6 +62,7 @@ export function createApp() {
   app.use("/api/activity-logs", activityLogsRoutes);
   app.use("/api/invoices", invoicesRoutes);
   app.use("/api/users", usersRoutes);
+  app.use("/api/settings", settingsRoutes);
 
   app.use(errorHandler);
 

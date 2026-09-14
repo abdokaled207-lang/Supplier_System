@@ -1,27 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, setToken } from "../api/client";
+import { useSettings } from "../api/hooks";
 import type { UserRole } from "../api/types";
-import { getAllSettings, type SystemSettings } from "../utils/settings";
+import { getAllSettings, persistSettings, type SystemSettings } from "../utils/settings";
 import { useAuth } from "../auth/auth";
 import { InlineError } from "../components/InlineError";
 import { UsersPanel } from "../components/UsersPanel";
 import { fieldClass } from "../utils/forms";
-
-const KEYS: (keyof SystemSettings)[] = [
-  "companyName",
-  "companyAddress",
-  "companyCity",
-  "companyPhone",
-  "companyEmail",
-  "bankName",
-  "bankAccountName",
-  "bankAccountNumber",
-  "lowStockThreshold",
-  "logoUrl",
-  "signatureUrl",
-];
 
 function loadSettings(): SystemSettings {
   return getAllSettings();
@@ -34,6 +21,32 @@ export function Settings() {
 
   const [form, setForm] = useState<SystemSettings>(loadSettings);
   const [saved, setSaved] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  const settingsQuery = useSettings();
+
+  // Server is the source of truth. Adopt its values once loaded, but never
+  // clobber edits the user has already started typing.
+  useEffect(() => {
+    if (settingsQuery.data && !formDirty) setForm(settingsQuery.data.data);
+  }, [settingsQuery.data, formDirty]);
+
+  const saveSettings = useMutation({
+    mutationFn: (body: SystemSettings) => api.put<{ data: SystemSettings }>("/settings", body),
+    onSuccess: (res) => {
+      persistSettings(res.data);
+      qc.setQueryData(["settings"], res);
+      setForm(res.data);
+      setFormDirty(false);
+      setSettingsError(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (err: { message?: string }) => {
+      setSettingsError(err?.message ?? "Could not save settings. Please try again.");
+    },
+  });
 
   const initialEmail = (() => {
     try {
@@ -90,19 +103,15 @@ export function Settings() {
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    KEYS.forEach((k) => {
-      if (k === "lowStockThreshold") {
-        const v = Number(form.lowStockThreshold);
-        localStorage.setItem(`roti_${k}`, String(isNaN(v) || v < 1 ? 5 : v));
-      } else {
-        localStorage.setItem(`roti_${k}`, (form[k] as string) ?? "");
-      }
+    const threshold = Number(form.lowStockThreshold);
+    saveSettings.mutate({
+      ...form,
+      lowStockThreshold: Number.isFinite(threshold) && threshold >= 1 ? threshold : 5,
     });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   }
 
   function handleChange<K extends keyof SystemSettings>(k: K, value: SystemSettings[K]) {
+    setFormDirty(true);
     setForm((prev) => ({ ...prev, [k]: value }));
   }
 
@@ -184,6 +193,10 @@ export function Settings() {
               <input type="text" value={form.companyName} onChange={(e) => handleChange("companyName", e.target.value)} autoComplete="off" />
             </label>
             <label className="field">
+              Owner / Contact Name
+              <input type="text" value={form.companyOwner} onChange={(e) => handleChange("companyOwner", e.target.value)} autoComplete="off" placeholder="e.g. Muhammad Tamrin" />
+            </label>
+            <label className="field">
               Phone
               <input type="text" value={form.companyPhone} onChange={(e) => handleChange("companyPhone", e.target.value)} autoComplete="off" placeholder="e.g. 0123456789" />
             </label>
@@ -192,12 +205,12 @@ export function Settings() {
               <input type="email" value={form.companyEmail} onChange={(e) => handleChange("companyEmail", e.target.value)} autoComplete="off" />
             </label>
             <label className="field">
-              Street Address
-              <input type="text" value={form.companyAddress} onChange={(e) => handleChange("companyAddress", e.target.value)} autoComplete="off" />
+              Street Address (one line per address line)
+              <textarea value={form.companyAddress} onChange={(e) => handleChange("companyAddress", e.target.value)} autoComplete="off" rows={3} placeholder={"5 Jalan Bbi 1\nTmn Bukit Beruang indah\nAyer keroh Melaka"} />
             </label>
             <label className="field">
-              City / Postcode
-              <input type="text" value={form.companyCity} onChange={(e) => handleChange("companyCity", e.target.value)} autoComplete="off" />
+              City
+              <input type="text" value={form.companyCity} onChange={(e) => handleChange("companyCity", e.target.value)} autoComplete="off" placeholder="e.g. Melaka" />
             </label>
             <label className="field">
               Low Stock Alert Threshold
@@ -238,7 +251,13 @@ export function Settings() {
           </div>
         </div>
 
-        <button type="submit" className="secondary">{saved ? "Saved!" : "Save settings"}</button>
+        {settingsError && <InlineError message={settingsError} />}
+        {!isAdmin && (
+          <p className="field-hint">Only admins can change company settings.</p>
+        )}
+        <button type="submit" className="secondary" disabled={!isAdmin || saveSettings.isPending}>
+          {saveSettings.isPending ? "Saving…" : saved ? "Saved!" : "Save settings"}
+        </button>
       </form>
     </section>
   );

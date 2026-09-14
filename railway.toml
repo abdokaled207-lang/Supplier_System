@@ -1,0 +1,16 @@
+# Railway configuration — read from the repository root (service root = repo root).
+# This drives the deploy for the backend. Railway auto-provides DATABASE_URL
+# when the MySQL addon is attached.
+[build]
+builder = "RAILPACK"
+# Generate the Prisma client, then compile TypeScript to dist/.
+buildCommand = "cd backend && npm ci && npm run db:generate && npm run build"
+
+[deploy]
+# Apply pending migrations, then boot the compiled server.
+startCommand = "cd backend && node dist/index.js"
+preDeployCommand = "cd backend && npm run db:migrate"
+# App exposes GET /health (see src/app.ts).
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ALWAYS"

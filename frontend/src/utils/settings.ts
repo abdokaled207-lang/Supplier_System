@@ -2,6 +2,7 @@ const PREFIX = "roti_";
 
 export interface SystemSettings {
   companyName: string;
+  companyOwner: string;
   companyAddress: string;
   companyCity: string;
   companyPhone: string;
@@ -15,7 +16,8 @@ export interface SystemSettings {
 }
 
 const DEFAULTS: SystemSettings = {
-  companyName: "ROTI CHANI KING",
+  companyName: "DOH GRED A1",
+  companyOwner: "",
   companyAddress: "",
   companyCity: "",
   companyPhone: "",
@@ -27,6 +29,8 @@ const DEFAULTS: SystemSettings = {
   logoUrl: "",
   signatureUrl: "",
 };
+
+export const SETTINGS_DEFAULTS: SystemSettings = DEFAULTS;
 
 function key(k: keyof SystemSettings): string {
   return `${PREFIX}${k}`;
@@ -54,6 +58,7 @@ export function setSetting<K extends keyof SystemSettings>(k: K, value: SystemSe
 export function getAllSettings(): SystemSettings {
   return {
     companyName: String(getSetting("companyName")),
+    companyOwner: String(getSetting("companyOwner")),
     companyAddress: String(getSetting("companyAddress")),
     companyCity: String(getSetting("companyCity")),
     companyPhone: String(getSetting("companyPhone")),
@@ -69,4 +74,16 @@ export function getAllSettings(): SystemSettings {
 
 export function invoiceNumber(orderId: number): string {
   return `INV-${String(orderId).padStart(3, "0")}`;
+}
+
+// Mirror a full settings object into localStorage. Used after a successful
+// server save so this device has an instant, offline-safe copy on next load.
+export function persistSettings(settings: SystemSettings): void {
+  try {
+    (Object.keys(DEFAULTS) as (keyof SystemSettings)[]).forEach((k) => {
+      localStorage.setItem(`${PREFIX}${k}`, String(settings[k]));
+    });
+  } catch {
+    /* storage unavailable */
+  }
 }

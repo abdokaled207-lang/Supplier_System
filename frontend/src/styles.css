@@ -1,4 +1,4 @@
-/* ROTI CHANI KING — design tokens + base styles.
+/* DOH GRED A1 — design tokens + base styles.
    Plain CSS (no framework). Web Interface Guidelines-aware. */
 
 :root {
@@ -1100,9 +1100,12 @@ tbody tr:hover {
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
   color: #001028;
-  width: 100%;
-  max-width: 800px;
+  width: 794px;
   font-size: 14px;
+}
+
+.inv-sheet-scroll {
+  overflow-x: auto;
 }
 
 /* The app's data tables carry a card shadow (element-level `table` rule);
@@ -1168,6 +1171,14 @@ tbody tr:hover {
   color: #1F3864;
   margin: 0;
   line-height: 1.2;
+}
+
+.inv-company-subline {
+  font-size: 11px;
+  font-weight: 400;
+  color: #333;
+  margin: 0;
+  line-height: 1.3;
 }
 
 .inv-company-info p {
@@ -1248,6 +1259,60 @@ tbody tr:hover {
   line-height: 1.5;
 }
 
+.inv-bill-to-input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.inv-bill-to-input.inv-customer-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.3;
+}
+
+.inv-bill-to-input:not(.inv-customer-name) {
+  font-size: 10px;
+  color: #555;
+}
+
+.inv-bill-to-input:focus {
+  outline: 1px solid #ccc;
+  background: #fafafa;
+}
+
+.inv-bill-to-input::placeholder {
+  color: #bbb;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.inv-pdf-mode .inv-bill-to-input:placeholder-shown {
+  display: none;
+}
+
+.inv-baki-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.inv-baki-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
 .inv-meta-block {
   display: flex;
   flex-direction: column;
@@ -1274,7 +1339,7 @@ tbody tr:hover {
   font-size: 10px;
   font-weight: 700;
   color: #000;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: Arial, Helvetica, sans-serif;
   letter-spacing: 0.3px;
 }
 
@@ -1380,6 +1445,49 @@ tbody tr:hover {
 }
 
 /* ===== LOWER SECTION: PAYMENT + SIGNATURE ===== */
+.inv-message-area {
+  padding: 12px 32px 0;
+  height: 70px;
+  box-sizing: border-box;
+}
+
+.inv-message-input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 10px;
+  color: #000;
+  resize: none;
+  overflow: auto;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.inv-message-input:focus {
+  border-color: #1F3864;
+}
+
+.inv-message-input::placeholder {
+  color: #bbb;
+}
+
+.inv-pdf-mode .inv-message-input {
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+}
+
+.inv-pdf-mode .inv-message-empty {
+  display: none;
+}
+
 .inv-lower-section {
   display: flex;
   justify-content: space-between;
@@ -1392,16 +1500,13 @@ tbody tr:hover {
   flex: 1;
 }
 
-.inv-payment-box {
-  border-left: 2px solid #2C2C2C;
-  padding: 10px 14px;
-  background: #f5f5f5;
+.inv-payment-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.inv-payment-box p {
+.inv-payment-text p {
   font-size: 10px;
   color: #000;
   margin: 0;
@@ -1417,7 +1522,7 @@ tbody tr:hover {
 .inv-signature-block {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 8px;
   align-items: flex-end;
 }
 
@@ -1426,6 +1531,10 @@ tbody tr:hover {
   font-weight: 600;
   color: #000;
   margin: 0;
+}
+
+.inv-for-line {
+  text-transform: uppercase;
 }
 
 .inv-signature-img {
@@ -1437,16 +1546,17 @@ tbody tr:hover {
 .inv-sig-line {
   border-top: 1px solid #2C2C2C;
   width: 200px;
-  padding-top: 4px;
+  height: 45px;
 }
 
-.inv-sig-line p {
+.inv-sig-label {
   font-size: 9px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
   text-align: center;
+  width: 200px;
 }
 
 /* ===== FOOTER ===== */
@@ -1527,6 +1637,7 @@ tbody tr:hover {
   .layout { display: block; }
 
   .invoice-page { max-width: 100%; padding: 0; }
+  .inv-sheet-scroll { overflow: visible; }
   .inv-sheet { box-shadow: none; border: none; }
 }
 
@@ -1655,6 +1766,118 @@ tbody tr:hover {
   pointer-events: none;
   position: absolute;
   top: -9999px;
+}
+
+/* ===== ARK UI COMBOBOX ===== */
+.ark-combobox {
+  min-width: 0;
+}
+
+.inline-form > .ark-combobox {
+  flex: 1 1 180px;
+}
+
+.ark-combobox [data-part='control'] {
+  display: flex;
+  position: relative;
+}
+
+.ark-combobox [data-part='input'] {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  touch-action: manipulation;
+}
+
+.ark-combobox [data-part='input']:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.ark-combobox [data-part='positioner'] {
+  z-index: calc(1000 + var(--layer-index, 0));
+  width: var(--reference-width);
+}
+
+.ark-combobox [data-part='content'] {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  max-height: 250px;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.ark-combobox [data-part='content']::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ark-combobox [data-part='content']::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ark-combobox [data-part='item'] {
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  transition: background-color 150ms ease;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ark-combobox [data-part='item']:hover {
+  background: var(--surface-2);
+}
+
+.ark-combobox [data-part='item'][data-highlighted] {
+  background: var(--primary-soft);
+  color: var(--primary-soft-text);
+}
+
+.ark-combobox [data-part='item'][data-state='checked'] {
+  color: var(--primary-soft-text);
+  font-weight: 500;
+}
+
+.ark-combobox [data-part='item-indicator'] {
+  margin-left: auto;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.ark-combobox [data-part='item-indicator']:empty {
+  display: none;
+}
+
+.ark-combobox [data-part='item-text'] {
+  align-items: center;
+  display: flex;
+  font-size: 0.95rem;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ark-combobox [data-part='empty'] {
+  padding: var(--space-2);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 .field-error {
   display: block;
@@ -1914,6 +2137,10 @@ tbody tr:hover {
   background: rgba(0, 0, 0, 0.45);
   z-index: 49;
   transition: opacity 200ms ease;
+}
+
+.nav-drawer-backdrop[data-state="open"] {
+  pointer-events: auto;
 }
 
 .nav-drawer-backdrop[data-state="closed"] {

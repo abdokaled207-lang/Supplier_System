@@ -9,6 +9,14 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model SystemSetting {
+  key   String @id @db.VarChar(100)
+  value String @db.Text
+
+  @@map("System_Settings")
+}
+
 model Customer {
   customerId Int       @id @default(autoincrement()) @map("customer_id")
   fullName   String    @map("full_name") @db.VarChar(150)

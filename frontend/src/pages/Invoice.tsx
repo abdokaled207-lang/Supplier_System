@@ -5,6 +5,7 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { Mail, Phone } from "lucide-react";
 import { api } from "../api/client";
+import { useSettings } from "../api/hooks";
 import type { CustomerProfile, Order } from "../api/types";
 import { LoadingSkeleton } from "../components/LoadingSkeleton";
 import { InlineError } from "../components/InlineError";
@@ -17,10 +18,54 @@ import { waMeLink } from "../utils/phone";
 
 // External hosts rarely send CORS headers, so html2canvas drops their images
 // from the generated PDF. Route them through the backend's same-origin proxy.
+// Additionally, if the URL points to localhost (e.g. the admin entered
+// http://localhost:4000/files/logo.png in Settings), extract the pathname as
+// a root-relative path — localhost is unreachable from a mobile device.
 function proxiedImageUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("data:") || url.startsWith("/")) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+      return parsed.pathname;
+    }
+  } catch {
+    // not a valid URL — fall through to proxy
+  }
   return `/proxy-image?url=${encodeURIComponent(url)}`;
+}
+
+// Standalone 5-digit Malaysian postcodes (e.g. "75450") clutter the invoice
+// header, so drop them from display. Applied to the city sub-line and each
+// address line.
+const POSTCODE_RE = /\b\d{5}\b/g;
+
+function stripPostcode(value: string): string {
+  return value
+    .replace(POSTCODE_RE, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s*[-,]\s*$/, "")
+    .trim();
+}
+
+// Address may be entered either as one line per address line (current form) or
+// as a single comma-separated line (legacy data). Prefer explicit newlines, and
+// fall back to splitting on commas only when there are no newlines.
+function addressLines(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const byLine = raw
+    .split(/\r?\n/)
+    .map((line) => stripPostcode(line))
+    .filter(Boolean);
+  if (byLine.length > 1) return byLine;
+  const single = byLine[0] ?? "";
+  if (single.includes(",")) {
+    return single
+      .split(",")
+      .map((part) => stripPostcode(part))
+      .filter(Boolean);
+  }
+  return single ? [single] : [];
 }
 
 export function Invoice() {
@@ -28,6 +73,7 @@ export function Invoice() {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [includeBakiTertunggak, setIncludeBakiTertunggak] = useState(false);
 
   const orderQuery = useQuery({
     queryKey: ["order-invoice", id],
@@ -50,19 +96,30 @@ export function Invoice() {
   async function generatePdf(): Promise<Blob> {
     const el = sheetRef.current;
     if (!el) throw new Error("Invoice not ready");
-    const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 5;
-    let imgW = pageW - margin * 2;
-    let imgH = (canvas.height / canvas.width) * imgW;
-    if (imgH > pageH - margin * 2) {
-      imgH = pageH - margin * 2;
-      imgW = (canvas.width / canvas.height) * imgH;
+    el.classList.add("inv-pdf-mode");
+    const msgArea = el.querySelector(".inv-message-area");
+    if (msgArea) {
+      const ta = msgArea.querySelector("textarea");
+      if (ta && !ta.value.trim()) msgArea.classList.add("inv-message-empty");
     }
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pageW - imgW) / 2, margin, imgW, imgH);
-    return pdf.output("blob");
+    try {
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 5;
+      let imgW = pageW - margin * 2;
+      let imgH = (canvas.height / canvas.width) * imgW;
+      if (imgH > pageH - margin * 2) {
+        imgH = pageH - margin * 2;
+        imgW = (canvas.width / canvas.height) * imgH;
+      }
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", (pageW - imgW) / 2, margin, imgW, imgH);
+      return pdf.output("blob");
+    } finally {
+      el.classList.remove("inv-pdf-mode");
+      if (msgArea) msgArea.classList.remove("inv-message-empty");
+    }
   }
 
   function downloadPdf(pdf: Blob) {
@@ -128,6 +185,14 @@ export function Invoice() {
             <WhatsAppIcon size={16} /> Send to Customer
           </button>
         )}
+        <label className="inv-baki-toggle">
+          <input
+            type="checkbox"
+            checked={includeBakiTertunggak}
+            onChange={(e) => setIncludeBakiTertunggak(e.target.checked)}
+          />
+          Include prior debt (Baki Tertunggak)
+        </label>
       </div>
 
       {sendError && <InlineError message={sendError} />}
@@ -135,27 +200,44 @@ export function Invoice() {
       {orderQuery.isError && <InlineError message={(orderQuery.error as Error)?.message ?? "Failed to load invoice"} />}
 
       {order && (
-        <div ref={sheetRef}>
-          <InvoiceSheet
-            order={order}
-            outstandingBalance={customerQuery.data?.data?.outstandingBalance}
-          />
+        <div className="inv-sheet-scroll">
+          <div ref={sheetRef}>
+            <InvoiceSheet
+              key={order.orderId}
+              order={order}
+              outstandingBalance={customerQuery.data?.data?.outstandingBalance}
+              includeBakiTertunggak={includeBakiTertunggak}
+            />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstandingBalance?: string }) {
-  const settings = getAllSettings();
+function InvoiceSheet({ order, outstandingBalance, includeBakiTertunggak }: { order: Order; outstandingBalance?: string; includeBakiTertunggak: boolean }) {
+  const { data: settingsData } = useSettings();
+  const settings = settingsData?.data ?? getAllSettings();
+  const sublineOwner = stripPostcode(settings.companyOwner);
+  const sublineCity = stripPostcode(settings.companyCity);
+  const companyAddressLines = addressLines(settings.companyAddress);
+  const logoUrl = proxiedImageUrl(settings.logoUrl);
+  const signatureUrl = proxiedImageUrl(settings.signatureUrl);
   const invNum = invoiceNumber(order.orderId);
   const invDate = formatShortDate(order.orderDate);
   const customer = order.customer;
 
+  const [billToName, setBillToName] = useState(customer?.fullName ?? "");
+  const [billToAddress, setBillToAddress] = useState(customer?.address ?? "");
+  const [billToPhone, setBillToPhone] = useState(customer?.phone ?? "");
+  const [messageToCustomer, setMessageToCustomer] = useState("");
+  const [logoError, setLogoError] = useState(false);
+  const [sigError, setSigError] = useState(false);
+
   const currentBalance = Number(order.balance);
   const outstanding = outstandingBalance !== undefined ? Number(outstandingBalance) : currentBalance;
   const bakiTertunggak = Math.max(outstanding - (Number(order.paid) - currentBalance), 0);
-  const grandTotal = Number(order.total) + bakiTertunggak;
+  const grandTotal = includeBakiTertunggak ? currentBalance + bakiTertunggak : currentBalance;
 
   return (
     <div className="inv-sheet">
@@ -163,19 +245,36 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
       {/* Clear-invoice layout: logo left, company block centered, INVOICE title right */}
       <div className="inv-header-row">
         <div className="inv-header-logo">
-          {settings.logoUrl ? (
-            <img src={proxiedImageUrl(settings.logoUrl)} alt="Company logo" className="inv-logo" />
+          {logoUrl && !logoError ? (
+            <img
+              src={logoUrl}
+              alt="Company logo"
+              className="inv-logo"
+              crossOrigin="anonymous"
+              onError={() => {
+                console.warn("[invoice] company logo failed to load:", logoUrl);
+                setLogoError(true);
+              }}
+            />
           ) : (
             <div className="inv-logo-placeholder" aria-hidden="true">
-              <span>{settings.companyName ? settings.companyName.charAt(0) : "R"}</span>
+              <span>{settings.companyName ? settings.companyName.charAt(0) : "D"}</span>
             </div>
           )}
         </div>
 
         <div className="inv-company-info">
-          <p className="inv-company-name">{settings.companyName || "ROTI CHANI KING"}</p>
-          {settings.companyAddress && <p>{settings.companyAddress}</p>}
-          {settings.companyCity && <p>{settings.companyCity}</p>}
+          <p className="inv-company-name">{settings.companyName || "DOH GRED A1"}</p>
+          {(sublineOwner || sublineCity) && (
+            <p className="inv-company-subline">
+              {sublineOwner}
+              {sublineOwner && sublineCity ? " - " : ""}
+              {sublineCity}
+            </p>
+          )}
+          {companyAddressLines.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
           {(settings.companyPhone || settings.companyEmail) && (
             <p className="inv-company-contact">
               {settings.companyPhone && (
@@ -202,9 +301,9 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
         {/* Left: BILL TO */}
         <div className="inv-bill-to">
           <p className="inv-label-small">BILL TO</p>
-          <p className="inv-customer-name">{customer?.fullName ?? "—"}</p>
-          {customer?.address && <p>{customer.address}</p>}
-          {customer?.phone && <p>{customer.phone}</p>}
+          <input className="inv-bill-to-input inv-customer-name" value={billToName} onChange={(e) => setBillToName(e.target.value)} placeholder="Customer name" />
+          {billToAddress && <input className="inv-bill-to-input" value={billToAddress} onChange={(e) => setBillToAddress(e.target.value)} placeholder="Address" />}
+          <input className="inv-bill-to-input" value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} placeholder="Phone" />
         </div>
 
         {/* Right: Invoice metadata */}
@@ -256,11 +355,23 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
             <span>SUB TOTAL</span>
             <span className="inv-amount">{formatMoney(order.total)}</span>
           </div>
-          {bakiTertunggak > 0 && (
-            <div className="inv-totals-row">
-              <span>BAKI TERTUNGGAK</span>
-              <span className="inv-amount">{formatMoney(bakiTertunggak)}</span>
-            </div>
+          <div className="inv-totals-row">
+            <span>PAID</span>
+            <span className="inv-amount">{formatMoney(order.paid)}</span>
+          </div>
+          {includeBakiTertunggak && (
+            <>
+              <div className="inv-totals-row">
+                <span>BALANCE (this order)</span>
+                <span className="inv-amount">{formatMoney(currentBalance)}</span>
+              </div>
+              {bakiTertunggak > 0 && (
+                <div className="inv-totals-row">
+                  <span>BAKI TERTUNGGAK</span>
+                  <span className="inv-amount">{formatMoney(bakiTertunggak)}</span>
+                </div>
+              )}
+            </>
           )}
           <div className="inv-grand-total-row">
             <span className="inv-grand-label">GRAND TOTAL</span>
@@ -269,12 +380,24 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
         </div>
       </div>
 
+      {/* ===== MESSAGE TO CUSTOMER (fixed reserved space, never reflows) ===== */}
+      <div className="inv-message-area">
+        <p className="inv-label-small">MESSAGE TO CUSTOMER</p>
+        <textarea
+          className="inv-message-input"
+          value={messageToCustomer}
+          onChange={(e) => setMessageToCustomer(e.target.value)}
+          placeholder="Optional note for this delivery…"
+          rows={2}
+        />
+      </div>
+
       {/* ===== PAYMENT INSTRUCTIONS + SIGNATURE ===== */}
       <div className="inv-lower-section">
         {/* Left: Payment Instructions */}
         <div className="inv-payment-col">
           {(settings.bankName || settings.bankAccountName || settings.bankAccountNumber) && (
-            <div className="inv-payment-box">
+            <div className="inv-payment-text">
               <p className="inv-label-small">PAYMENT INSTRUCTIONS</p>
               {settings.bankAccountName && <p>Account name: {settings.bankAccountName}</p>}
               {settings.bankAccountNumber && <p>Account number: {settings.bankAccountNumber}</p>}
@@ -286,14 +409,22 @@ function InvoiceSheet({ order, outstandingBalance }: { order: Order; outstanding
         {/* Right: Signature */}
         <div className="inv-signature-col">
           <div className="inv-signature-block">
-            <p>For, {settings.companyName || "ROTI CHANI KING"}</p>
-            {settings.signatureUrl ? (
-              <img src={proxiedImageUrl(settings.signatureUrl)} alt="Authorized signature" className="inv-signature-img" />
+            <p className="inv-for-line">For, {settings.companyName || "DOH GRED A1"}</p>
+            {signatureUrl && !sigError ? (
+              <img
+                src={signatureUrl}
+                alt="Authorized signature"
+                className="inv-signature-img"
+                crossOrigin="anonymous"
+                onError={() => {
+                  console.warn("[invoice] signature image failed to load:", signatureUrl);
+                  setSigError(true);
+                }}
+              />
             ) : (
-              <div className="inv-sig-line">
-                <p>AUTHORIZED SIGNATURE</p>
-              </div>
+              <div className="inv-sig-line" />
             )}
+            <p className="inv-sig-label">AUTHORIZED SIGNATURE</p>
           </div>
         </div>
       </div>
